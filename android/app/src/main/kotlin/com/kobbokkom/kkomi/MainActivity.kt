@@ -1,4 +1,4 @@
-package com.example.kkomi
+package com.kobbokkom.kkomi
 
 import io.flutter.embedding.android.FlutterActivity
 

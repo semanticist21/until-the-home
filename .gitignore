@@ -43,3 +43,41 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android
+/android/local.properties
+*.jks
+*.keystore
+/android/.gradle/
+/android/app/.cxx/
+
+# iOS
+/ios/Pods/
+/ios/Podfile.lock
+/ios/.symlinks/
+/ios/Flutter/flutter_export_environment.sh
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Environment
+.env
+*.env
+.env.*
+
+# IDE
+.vscode/
+.cursor/
+
+# MCP
+.serena/
+
+# Generated
+.flutter-plugins
+*.g.dart
+*.freezed.dart
+*.mocks.dart
