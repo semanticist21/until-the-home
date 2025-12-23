@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**kkomi** is a Flutter application.
+**Kkomi** - Flutter application for document conversion (PDF, HWP).
 
 - **Package ID**: com.kobbokkom.kkomi
 - **Flutter SDK**: ^3.11.0-93.1.beta
@@ -12,32 +12,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-# Get dependencies
-flutter pub get
+flutter pub get          # Get dependencies
+flutter run              # Run app
+dart format lib/         # Format code
+dart analyze             # Analyze code
+flutter test             # Run tests
+flutter test test/widget_test.dart  # Run single test
 
-# Run app
-flutter run
-
-# Format code
-dart format lib/
-
-# Analyze code
-dart analyze
-
-# Run tests
-flutter test
-
-# Build release
+# Build
 flutter build apk --release   # Android
 flutter build ios --release   # iOS
 ```
 
-## Project Structure
+## Architecture
+
+Feature-First Clean Architecture:
 
 ```
 lib/
-└── main.dart          # App entry point
+├── core/                    # Shared utilities
+│   ├── constants/          # App-wide constants
+│   ├── network/            # API client, interceptors
+│   ├── theme/              # Colors, typography, themes
+│   ├── utils/              # Helper functions
+│   └── widgets/            # Reusable widgets
+│
+├── features/               # Feature modules
+│   └── [feature]/
+│       ├── data/           # Repository impl, data sources
+│       ├── domain/         # Entities, use cases, repo interfaces
+│       └── presentation/   # UI, state management (BLoC/Provider)
+│
+└── main.dart
 ```
+
+## Design System
+
+Color palette extracted from app icon (warm brown/golden tones):
+
+- **Primary**: `#B75634` - Warm brown (cat fur)
+- **Secondary**: `#FDDC64` - Golden yellow (background)
+- **Neutral**: Warm beige scale
+
+Colors defined in `lib/core/theme/app_colors.dart` with 50-900 shades.
 
 ## Platform Configuration
 
