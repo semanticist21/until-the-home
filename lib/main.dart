@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
+
+import 'core/widgets/app_button.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,56 +14,152 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'kkomi',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'kkomi'),
+      locale: const Locale('en', 'US'),
+      localizationsDelegates: FLocalizations.localizationsDelegates,
+      supportedLocales: FLocalizations.supportedLocales,
+      theme: FThemes.zinc.light.toApproximateMaterialTheme(),
+      builder: (context, child) =>
+          FTheme(data: FThemes.zinc.light, child: child!),
+      home: const HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
+    return FScaffold(
+      header: const FHeader(title: Text('kkomi')),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const Text(
+              'AppButton (Forui)',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+
+            // Primary
+            const Text('Primary', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                AppButton(label: 'Button', onPressed: () {}),
+                AppButton(
+                  label: 'With Icon',
+                  icon: Icons.add,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Secondary
+            const Text('Secondary', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                AppButton(
+                  label: 'Convert',
+                  variant: AppButtonVariant.secondary,
+                  icon: Icons.transform,
+                  onPressed: () {},
+                ),
+                AppButton(
+                  label: 'Disabled',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Outline
+            const Text('Outline', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                AppButton(
+                  label: 'Cancel',
+                  variant: AppButtonVariant.outline,
+                  onPressed: () {},
+                ),
+                AppButton(
+                  label: 'Disabled',
+                  variant: AppButtonVariant.outline,
+                  onPressed: null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Ghost
+            const Text('Ghost', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                AppButton(
+                  label: 'Learn More',
+                  variant: AppButtonVariant.ghost,
+                  onPressed: () {},
+                ),
+                AppButton(
+                  label: 'Skip',
+                  variant: AppButtonVariant.ghost,
+                  icon: Icons.arrow_forward,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Destructive
+            const Text('Destructive', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                AppButton(
+                  label: 'Delete',
+                  variant: AppButtonVariant.destructive,
+                  icon: Icons.delete,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Full width + loading
+            const Text('Full Width & Loading', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'Upload File',
+              icon: Icons.upload_file,
+              isFullWidth: true,
+              onPressed: () {},
+            ),
+            const SizedBox(height: 12),
+            const AppButton(
+              label: 'Loading...',
+              isFullWidth: true,
+              isLoading: true,
+              onPressed: null,
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
