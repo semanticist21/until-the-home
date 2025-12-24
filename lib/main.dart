@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:remixicon/remixicon.dart';
 
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 
 void main() {
@@ -32,8 +34,19 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const FScaffold(
-      child: SizedBox.shrink(),
+    return FScaffold(
+      header: FHeader(
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(
+              RemixIcons.settings_3_fill,
+              color: AppColors.primary500,
+            ),
+            onPress: () {},
+          ),
+        ],
+      ),
+      child: const SizedBox.shrink(),
     );
   }
 }
