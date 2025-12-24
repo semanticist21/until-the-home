@@ -48,13 +48,43 @@ lib/
 
 ## Design System
 
-Color palette extracted from app icon (warm brown/golden tones):
+### UI Framework: Forui
+
+- **Forui** 사용 (shadcn/ui 스타일의 Flutter 컴포넌트 라이브러리)
+- 공식 문서: https://forui.dev
+
+### Theme
+
+- `AppTheme.light` / `AppTheme.dark` - 커스텀 FThemeData
+- `AppColors` - 색상 팔레트 (50-900 shades)
+
+Color palette (warm brown/golden tones):
 
 - **Primary**: `#B75634` - Warm brown (cat fur)
 - **Secondary**: `#FDDC64` - Golden yellow (background)
 - **Neutral**: Warm beige scale
 
-Colors defined in `lib/core/theme/app_colors.dart` with 50-900 shades.
+### Component Wrapping Pattern
+
+Forui 위젯을 `App*` 접두사로 래핑하여 공통 컴포넌트화:
+
+```dart
+// 사용 예시
+AppButton(
+  label: 'Save',
+  variant: AppButtonVariant.primary,  // primary, secondary, outline, ghost, destructive
+  icon: Icons.save,
+  isLoading: false,
+  isFullWidth: false,
+  onPressed: () {},
+)
+```
+
+| App Component | Forui Widget | 위치 |
+|---------------|--------------|------|
+| `AppButton` | `FButton` | `lib/core/widgets/app_button.dart` |
+
+새 공통 컴포넌트 추가 시 동일 패턴 따를 것.
 
 ## Platform Configuration
 
