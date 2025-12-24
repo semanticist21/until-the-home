@@ -26,22 +26,16 @@ flutter build ios --release   # iOS
 
 ## Architecture
 
-Feature-First Clean Architecture:
-
 ```
 lib/
 ├── core/                    # Shared utilities
-│   ├── constants/          # App-wide constants
-│   ├── network/            # API client, interceptors
 │   ├── theme/              # Colors, typography, themes
-│   ├── utils/              # Helper functions
-│   └── widgets/            # Reusable widgets
+│   └── widgets/            # Reusable widgets (App* 접두사)
 │
-├── features/               # Feature modules
-│   └── [feature]/
-│       ├── data/           # Repository impl, data sources
-│       ├── domain/         # Entities, use cases, repo interfaces
-│       └── presentation/   # UI, state management (BLoC/Provider)
+├── screens/                # 화면별 모듈
+│   └── [screen]/
+│       ├── [screen]_screen.dart
+│       └── widgets/        # 해당 화면 전용 위젯
 │
 └── main.dart
 ```
@@ -83,6 +77,7 @@ AppButton(
 | App Component | Forui Widget | 위치 |
 |---------------|--------------|------|
 | `AppButton` | `FButton` | `lib/core/widgets/app_button.dart` |
+| `AppHeader` | - | `lib/core/widgets/app_header.dart` |
 
 새 공통 컴포넌트 추가 시 동일 패턴 따를 것.
 
