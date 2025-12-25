@@ -38,12 +38,16 @@ class RecentDocuments extends StatelessWidget {
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '최근 문서',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '최근 문서',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                      height: 1,
+                    ),
                   ),
                 ),
               ],

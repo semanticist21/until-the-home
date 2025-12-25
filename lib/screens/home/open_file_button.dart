@@ -35,14 +35,28 @@ class OpenFileButton extends StatelessWidget {
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '파일 열기',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                    height: 1,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '파일 열기',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'PDF · HWP · Word · Excel',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade400,
+                        height: 1,
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 Icon(

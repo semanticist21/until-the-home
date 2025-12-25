@@ -38,7 +38,7 @@ class _HeaderState extends State<Header> {
             onTapCancel: () => setState(() => _isSettingsPressed = false),
             onTap: widget.onSettingsTap,
             child: Icon(
-              RemixIcons.settings_3_line,
+              RemixIcons.settings_3_fill,
               size: 22,
               color: Colors.grey.shade500,
             ).animate(target: _isSettingsPressed ? 1 : 0).scale(

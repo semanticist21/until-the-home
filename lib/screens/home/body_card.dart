@@ -27,7 +27,7 @@ class BodyCard extends StatelessWidget {
           children: [
             // Weekly limit row
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Image.asset(
                   'assets/images/icons/usage_empty.webp',
@@ -35,35 +35,41 @@ class BodyCard extends StatelessWidget {
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '주간 한도',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                      height: 1,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          '주간 한도',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                            height: 1,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '3일 후 초기화',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade400,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '60 / 200',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                            height: 1,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '3일 후 초기화',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade400,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '60 / 200',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
-                    height: 1,
                   ),
                 ),
               ],
