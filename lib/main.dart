@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'core/theme/app_theme.dart';
 import 'screens/home/index.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   runApp(const MyApp());
 }
 

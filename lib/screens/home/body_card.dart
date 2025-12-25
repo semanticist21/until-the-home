@@ -27,57 +27,51 @@ class BodyCard extends StatelessWidget {
           children: [
             // Weekly limit row
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/icons/usage_empty.png',
+                  'assets/images/icons/usage_empty.webp',
                   width: 20,
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 3),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '주간 한도',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                '3일 후 초기화',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '60 / 200',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const AppProgress(value: 60 / 200),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '주간 한도',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                      height: 1,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '3일 후 초기화',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade400,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '60 / 200',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade600,
+                    height: 1,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.only(left: 28),
+              child: AppProgress(value: 60 / 200),
             ),
             const SizedBox(height: 20),
             // Stats row - 2 columns
@@ -86,7 +80,7 @@ class BodyCard extends StatelessWidget {
                 // Streak days
                 Expanded(
                   child: _StatColumn(
-                    icon: 'assets/images/icons/calendar_bun_empty.png',
+                    icon: 'assets/images/icons/calendar_bun_empty.webp',
                     label: '연속 사용',
                     value: '3일',
                   ),
@@ -95,7 +89,7 @@ class BodyCard extends StatelessWidget {
                 // Pages viewed
                 Expanded(
                   child: _StatColumn(
-                    icon: 'assets/images/icons/document_open_empty.png',
+                    icon: 'assets/images/icons/document_open_empty.webp',
                     label: '이번 주 열람',
                     value: '127페이지',
                   ),

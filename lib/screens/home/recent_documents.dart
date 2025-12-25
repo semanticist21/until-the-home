@@ -1,31 +1,64 @@
 import 'package:flutter/material.dart';
 
-import '../../core/widgets/app_section_title.dart';
-
 class RecentDocuments extends StatelessWidget {
   const RecentDocuments({super.key});
 
+  static const _mockDocuments = [
+    ('2024년 연간보고서.pdf', '오늘', 'PDF'),
+    ('회의록_12월.hwp', '어제', 'HWP'),
+    ('프로젝트 제안서.docx', '3일 전', 'DOCX'),
+    ('매출현황_Q4.xlsx', '5일 전', 'XLSX'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              'assets/images/icons/document_history_empty.png',
-              width: 20,
-              height: 20,
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/icons/document_history_empty.webp',
+                  width: 20,
+                  height: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '최근 문서',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            const AppSectionTitle(title: '최근 문서'),
+            const SizedBox(height: 16),
+            ...List.generate(_mockDocuments.length * 2 - 1, (index) {
+              if (index.isOdd) {
+                return Divider(height: 1, color: Colors.grey.shade200);
+              }
+              final doc = _mockDocuments[index ~/ 2];
+              return _DocumentItem(title: doc.$1, date: doc.$2, type: doc.$3);
+            }),
           ],
         ),
-        const SizedBox(height: 12),
-        const _DocumentItem(title: '2024년 연간보고서.pdf', date: '오늘', type: 'PDF'),
-        const _DocumentItem(title: '회의록_12월.hwp', date: '어제', type: 'HWP'),
-        const _DocumentItem(title: '프로젝트 제안서.docx', date: '3일 전', type: 'DOCX'),
-      ],
+      ),
     );
   }
 }
@@ -43,28 +76,26 @@ class _DocumentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getTypeColor(type).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              type,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: _getTypeColor(type),
+          SizedBox(
+            width: 44,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getTypeColor(type).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                type,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: _getTypeColor(type),
+                ),
               ),
             ),
           ),
@@ -97,6 +128,8 @@ class _DocumentItem extends StatelessWidget {
         return const Color(0xFF1E88E5);
       case 'DOCX':
         return const Color(0xFF2E7D32);
+      case 'XLSX':
+        return const Color(0xFF1D6F42);
       default:
         return Colors.grey;
     }

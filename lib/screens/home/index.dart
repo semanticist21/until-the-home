@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_ad_banner.dart';
 import 'body.dart';
 import 'header.dart';
 
@@ -16,6 +17,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Header(onSettingsTap: () {}),
             const Expanded(child: Body()),
+            const AppAdBanner(),
           ],
         ),
       ),
