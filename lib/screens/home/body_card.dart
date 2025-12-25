@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/app_progress.dart';
+
 class BodyCard extends StatelessWidget {
   const BodyCard({super.key});
 
@@ -18,6 +20,16 @@ class BodyCard extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Spacer(),
+            AppProgress(value: 0.65),
+          ],
+        ),
       ),
     );
   }
