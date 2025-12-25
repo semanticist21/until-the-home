@@ -18,16 +18,6 @@ class _HeaderState extends State<Header> {
 
   @override
   Widget build(BuildContext context) {
-    final Color iconBorder = _isSettingsPressed
-        ? AppColors.primary300.withValues(alpha: 0.6)
-        : AppColors.primary200.withValues(alpha: 0.6);
-    final Color iconColor = _isSettingsPressed
-        ? AppColors.primary600
-        : AppColors.primary400;
-    final Color iconBackground = _isSettingsPressed
-        ? AppColors.primary100
-        : AppColors.primary50;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       child: Row(
@@ -47,29 +37,16 @@ class _HeaderState extends State<Header> {
             onTapUp: (_) => setState(() => _isSettingsPressed = false),
             onTapCancel: () => setState(() => _isSettingsPressed = false),
             onTap: widget.onSettingsTap,
-            child:
-                AnimatedContainer(
-                      duration: 120.ms,
-                      curve: Curves.easeOut,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: iconBackground,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: iconBorder, width: 1),
-                      ),
-                      child: Icon(
-                        RemixIcons.settings_3_fill,
-                        size: 20,
-                        color: iconColor,
-                      ),
-                    )
-                    .animate(target: _isSettingsPressed ? 1 : 0)
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(0.88, 0.88),
-                      duration: 100.ms,
-                      curve: Curves.easeOut,
-                    ),
+            child: Icon(
+              RemixIcons.settings_3_line,
+              size: 22,
+              color: Colors.grey.shade500,
+            ).animate(target: _isSettingsPressed ? 1 : 0).scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(0.9, 0.9),
+                  duration: 100.ms,
+                  curve: Curves.easeOut,
+                ),
           ),
         ],
       ),
