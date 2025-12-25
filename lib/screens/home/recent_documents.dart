@@ -4,10 +4,10 @@ class RecentDocuments extends StatelessWidget {
   const RecentDocuments({super.key});
 
   static const _mockDocuments = [
-    ('2024년 연간보고서.pdf', '오늘', 'PDF'),
-    ('회의록_12월.hwp', '어제', 'HWP'),
-    ('프로젝트 제안서.docx', '3일 전', 'DOCX'),
-    ('매출현황_Q4.xlsx', '5일 전', 'XLSX'),
+    ('2024년 연간보고서', '오늘', 'PDF'),
+    ('회의록_12월', '어제', 'HWP'),
+    ('프로젝트 제안서', '3일 전', 'DOCX'),
+    ('매출현황_Q4', '5일 전', 'XLSX'),
   ];
 
   @override
@@ -112,6 +112,7 @@ class _DocumentItem extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: Colors.grey.shade800,
               ),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
