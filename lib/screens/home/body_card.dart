@@ -21,13 +21,47 @@ class BodyCard extends StatelessWidget {
           ),
         ],
       ),
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Spacer(),
-            AppProgress(value: 0.65),
+            Image.asset(
+              'assets/images/icons/usage_empty.png',
+              width: 20,
+              height: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Weekly limit',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Text(
+                        '60 / 200',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const AppProgress(value: 60 / 200),
+                ],
+              ),
+            ),
           ],
         ),
       ),
