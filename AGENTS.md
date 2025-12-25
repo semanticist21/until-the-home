@@ -28,17 +28,25 @@ flutter build ios --release   # iOS
 
 ```
 lib/
-├── core/                    # Shared utilities
-│   ├── theme/              # Colors, typography, themes
-│   └── widgets/            # Reusable widgets (App* 접두사)
+├── core/                    # 공통 유틸리티
+│   ├── theme/              # AppColors, AppTheme
+│   └── widgets/            # 재사용 가능한 공통 위젯 (App* 접두사)
 │
 ├── screens/                # 화면별 모듈
 │   └── [screen]/
-│       ├── [screen]_screen.dart
-│       └── widgets/        # 해당 화면 전용 위젯
+│       ├── index.dart      # 메인 컴포넌트
+│       ├── header.dart     # 헤더 (화면 전용)
+│       └── body.dart       # 바디 (화면 전용)
 │
 └── main.dart
 ```
+
+### Screen 구조 규칙
+
+- 메인 컴포넌트: `index.dart`
+- 화면 전용 컴포넌트: `header.dart`, `body.dart` 등 (재사용 안 하는 것)
+- 재사용 컴포넌트만 `core/widgets/`에 배치
+- 재사용 안 하는 컴포넌트는 inline 처리
 
 ## Design System
 
@@ -66,10 +74,7 @@ Forui 위젯을 `App*` 접두사로 래핑하여 공통 컴포넌트화:
 // 사용 예시
 AppButton(
   label: 'Save',
-  variant: AppButtonVariant.primary,  // primary, secondary, outline, ghost, destructive
-  icon: Icons.save,
-  isLoading: false,
-  isFullWidth: false,
+  variant: AppButtonVariant.primary,
   onPressed: () {},
 )
 ```
@@ -77,9 +82,7 @@ AppButton(
 | App Component | Forui Widget | 위치 |
 |---------------|--------------|------|
 | `AppButton` | `FButton` | `lib/core/widgets/app_button.dart` |
-| `AppHeader` | - | `lib/core/widgets/app_header.dart` |
-
-새 공통 컴포넌트 추가 시 동일 패턴 따를 것.
+| `AppSectionTitle` | - | `lib/core/widgets/app_section_title.dart` |
 
 ## Platform Configuration
 

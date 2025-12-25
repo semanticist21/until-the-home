@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 
 import 'core/theme/app_theme.dart';
-import 'screens/home/home_screen.dart';
+import 'screens/home/index.dart';
 
 void main() {
   runApp(const MyApp());

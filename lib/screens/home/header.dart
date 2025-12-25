@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:remixicon/remixicon.dart';
 
-import '../theme/app_colors.dart';
+import '../../core/theme/app_colors.dart';
 
-class AppHeader extends StatefulWidget {
-  const AppHeader({super.key, this.onSettingsTap});
+class Header extends StatefulWidget {
+  const Header({super.key, this.onSettingsTap});
 
   final VoidCallback? onSettingsTap;
 
   @override
-  State<AppHeader> createState() => _AppHeaderState();
+  State<Header> createState() => _HeaderState();
 }
 
-class _AppHeaderState extends State<AppHeader> {
+class _HeaderState extends State<Header> {
   bool _isSettingsPressed = false;
 
   @override
@@ -21,18 +21,19 @@ class _AppHeaderState extends State<AppHeader> {
     final Color iconBorder = _isSettingsPressed
         ? AppColors.primary300.withOpacity(0.6)
         : AppColors.primary200.withOpacity(0.6);
-    final Color iconColor =
-        _isSettingsPressed ? AppColors.primary600 : AppColors.primary400;
-    final Color iconBackground =
-        _isSettingsPressed ? AppColors.primary100 : AppColors.primary50;
+    final Color iconColor = _isSettingsPressed
+        ? AppColors.primary600
+        : AppColors.primary400;
+    final Color iconBackground = _isSettingsPressed
+        ? AppColors.primary100
+        : AppColors.primary50;
 
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       child: Row(
         children: [
           const Text(
-            'Kkomi',
+            'Home',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 20,
@@ -47,7 +48,7 @@ class _AppHeaderState extends State<AppHeader> {
             onTapCancel: () => setState(() => _isSettingsPressed = false),
             onTap: widget.onSettingsTap,
             child:
-                    AnimatedContainer(
+                AnimatedContainer(
                       duration: 120.ms,
                       curve: Curves.easeOut,
                       padding: const EdgeInsets.all(8),

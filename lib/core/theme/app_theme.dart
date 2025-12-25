@@ -13,7 +13,7 @@ abstract final class AppTheme {
     systemOverlayStyle: SystemUiOverlayStyle.dark,
     barrier: Color(0x33000000),
     // Surface
-    background: AppColors.surface,
+    background: AppColors.secondary100,
     foreground: AppColors.textPrimary,
     // Primary - Warm Brown
     primary: AppColors.primary500,
