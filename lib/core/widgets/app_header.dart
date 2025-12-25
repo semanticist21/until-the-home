@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:remixicon/remixicon.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../theme/app_colors.dart';
 
-class Header extends StatefulWidget {
-  const Header({super.key, this.onSettingsTap});
+class AppHeader extends StatefulWidget {
+  const AppHeader({super.key, this.onSettingsTap});
 
   final VoidCallback? onSettingsTap;
 
   @override
-  State<Header> createState() => _HeaderState();
+  State<AppHeader> createState() => _AppHeaderState();
 }
 
-class _HeaderState extends State<Header> {
+class _AppHeaderState extends State<AppHeader> {
   bool _isSettingsPressed = false;
 
   @override
@@ -29,7 +29,7 @@ class _HeaderState extends State<Header> {
         : AppColors.primary50;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
           const Text(
