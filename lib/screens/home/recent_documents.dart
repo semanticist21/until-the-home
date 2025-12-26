@@ -8,6 +8,7 @@ class RecentDocuments extends StatelessWidget {
     ('회의록_12월', '어제', 'HWP'),
     ('프로젝트 제안서', '3일 전', 'DOCX'),
     ('매출현황_Q4', '5일 전', 'XLSX'),
+    ('고객데이터_export', '1주 전', 'CSV'),
   ];
 
   @override
@@ -135,6 +136,8 @@ class _DocumentItem extends StatelessWidget {
         return const Color(0xFF2E7D32);
       case 'XLSX':
         return const Color(0xFF1D6F42);
+      case 'CSV':
+        return const Color(0xFF7B1FA2);
       default:
         return Colors.grey;
     }

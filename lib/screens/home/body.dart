@@ -10,7 +10,8 @@ class Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,7 +26,7 @@ class Body extends StatelessWidget {
           const RecentDocuments(),
           const SizedBox(height: 12),
           const OpenFileButton(),
-          const Spacer(),
+          const SizedBox(height: 24),
         ],
       ),
     );
