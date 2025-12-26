@@ -60,7 +60,7 @@ class RecentDocuments extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 220,
+              height: 134,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(

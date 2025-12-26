@@ -185,12 +185,15 @@ class _BodyCardState extends State<BodyCard> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      _tip.fact,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                        height: 1.4,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        _tip.fact,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ),
