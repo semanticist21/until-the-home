@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
-class RecentDocuments extends StatelessWidget {
+import '../../core/data/recent_documents_store.dart';
+
+class RecentDocuments extends StatefulWidget {
   const RecentDocuments({super.key});
 
-  static const _mockDocuments = [
-    ('2024년 연간보고서', '오늘', 'PDF'),
-    ('회의록_12월', '어제', 'HWP'),
-    ('프로젝트 제안서', '3일 전', 'DOCX'),
-    ('매출현황_Q4', '5일 전', 'XLSX'),
-    ('고객데이터_export', '1주 전', 'CSV'),
-    ('인사발령_2024', '1주 전', 'PDF'),
-    ('팀미팅_노트', '2주 전', 'HWP'),
-    ('예산계획_2025', '2주 전', 'XLSX'),
-    ('계약서_최종', '3주 전', 'DOCX'),
-    ('주소록_백업', '1달 전', 'CSV'),
-  ];
+  @override
+  State<RecentDocuments> createState() => _RecentDocumentsState();
+}
+
+class _RecentDocumentsState extends State<RecentDocuments> {
+  @override
+  void initState() {
+    super.initState();
+    RecentDocumentsStore.instance.load();
+    RecentDocumentsStore.instance.pruneMissingFiles();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,24 +60,63 @@ class RecentDocuments extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 134,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: List.generate(_mockDocuments.length * 2 - 1, (index) {
-                    if (index.isOdd) {
-                      return Divider(height: 1, color: Colors.grey.shade200);
-                    }
-                    final doc = _mockDocuments[index ~/ 2];
-                    return _DocumentItem(
-                      title: doc.$1,
-                      date: doc.$2,
-                      type: doc.$3,
-                    );
-                  }),
-                ),
-              ),
+            ValueListenableBuilder<List<RecentDocument>>(
+              valueListenable: RecentDocumentsStore.instance.documents,
+              builder: (context, documents, _) {
+                if (documents.isEmpty) {
+                  return Container(
+                    height: 120,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.insert_drive_file_outlined,
+                          color: Colors.grey.shade300,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '최근에 연 문서가 없어요',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '파일 열기로 문서를 추가해보세요',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SizedBox(
+                  height: 134,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: List.generate(documents.length * 2 - 1, (index) {
+                        if (index.isOdd) {
+                          return Divider(height: 1, color: Colors.grey.shade200);
+                        }
+                        final doc = documents[index ~/ 2];
+                        return _DocumentItem(
+                          title: doc.name,
+                          date: _formatDate(doc.openedAt),
+                          type: doc.type,
+                        );
+                      }),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -148,9 +188,12 @@ class _DocumentItem extends StatelessWidget {
       case 'PDF':
         return const Color(0xFFE53935);
       case 'HWP':
+      case 'HWPX':
         return const Color(0xFF1E88E5);
+      case 'DOC':
       case 'DOCX':
         return const Color(0xFF2E7D32);
+      case 'XLS':
       case 'XLSX':
         return const Color(0xFF1D6F42);
       case 'CSV':
@@ -159,4 +202,27 @@ class _DocumentItem extends StatelessWidget {
         return Colors.grey;
     }
   }
+}
+
+String _formatDate(DateTime openedAt) {
+  final now = DateTime.now();
+  final diff = now.difference(openedAt);
+  if (diff.inMinutes < 1) {
+    return '방금 전';
+  }
+  if (diff.inMinutes < 60) {
+    return '${diff.inMinutes}분 전';
+  }
+  if (diff.inHours < 24) {
+    return '${diff.inHours}시간 전';
+  }
+  if (diff.inDays < 7) {
+    return '${diff.inDays}일 전';
+  }
+  if (diff.inDays < 30) {
+    final weeks = (diff.inDays / 7).floor();
+    return '${weeks}주 전';
+  }
+  final months = (diff.inDays / 30).floor();
+  return '${months}달 전';
 }

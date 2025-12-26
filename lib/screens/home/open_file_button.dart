@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+
+import '../../core/data/recent_documents_store.dart';
 
 class OpenFileButton extends StatelessWidget {
   const OpenFileButton({super.key});
@@ -21,8 +24,25 @@ class OpenFileButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // TODO: 파일 열기 기능
+          onTap: () async {
+            final result = await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: [
+                'pdf',
+                'hwp',
+                'hwpx',
+                'doc',
+                'docx',
+                'xls',
+                'xlsx',
+                'csv',
+              ],
+            );
+            final path = result?.files.single.path;
+            if (path == null || path.isEmpty) {
+              return;
+            }
+            await RecentDocumentsStore.instance.addDocument(path);
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
