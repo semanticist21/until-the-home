@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
 
@@ -100,7 +101,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
                 return SizedBox(
                   height: 134,
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     child: Column(
                       children: List.generate(documents.length * 2 - 1, (index) {
                         if (index.isOdd) {
@@ -205,24 +206,5 @@ class _DocumentItem extends StatelessWidget {
 }
 
 String _formatDate(DateTime openedAt) {
-  final now = DateTime.now();
-  final diff = now.difference(openedAt);
-  if (diff.inMinutes < 1) {
-    return '방금 전';
-  }
-  if (diff.inMinutes < 60) {
-    return '${diff.inMinutes}분 전';
-  }
-  if (diff.inHours < 24) {
-    return '${diff.inHours}시간 전';
-  }
-  if (diff.inDays < 7) {
-    return '${diff.inDays}일 전';
-  }
-  if (diff.inDays < 30) {
-    final weeks = (diff.inDays / 7).floor();
-    return '${weeks}주 전';
-  }
-  final months = (diff.inDays / 30).floor();
-  return '${months}달 전';
+  return timeago.format(openedAt, locale: 'ko');
 }
