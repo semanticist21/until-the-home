@@ -9,6 +9,11 @@ class RecentDocuments extends StatelessWidget {
     ('프로젝트 제안서', '3일 전', 'DOCX'),
     ('매출현황_Q4', '5일 전', 'XLSX'),
     ('고객데이터_export', '1주 전', 'CSV'),
+    ('인사발령_2024', '1주 전', 'PDF'),
+    ('팀미팅_노트', '2주 전', 'HWP'),
+    ('예산계획_2025', '2주 전', 'XLSX'),
+    ('계약서_최종', '3주 전', 'DOCX'),
+    ('주소록_백업', '1달 전', 'CSV'),
   ];
 
   @override
@@ -54,13 +59,25 @@ class RecentDocuments extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            ...List.generate(_mockDocuments.length * 2 - 1, (index) {
-              if (index.isOdd) {
-                return Divider(height: 1, color: Colors.grey.shade200);
-              }
-              final doc = _mockDocuments[index ~/ 2];
-              return _DocumentItem(title: doc.$1, date: doc.$2, type: doc.$3);
-            }),
+            SizedBox(
+              height: 220,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: List.generate(_mockDocuments.length * 2 - 1, (index) {
+                    if (index.isOdd) {
+                      return Divider(height: 1, color: Colors.grey.shade200);
+                    }
+                    final doc = _mockDocuments[index ~/ 2];
+                    return _DocumentItem(
+                      title: doc.$1,
+                      date: doc.$2,
+                      type: doc.$3,
+                    );
+                  }),
+                ),
+              ),
+            ),
           ],
         ),
       ),

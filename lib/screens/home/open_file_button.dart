@@ -49,7 +49,7 @@ class OpenFileButton extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'PDF · HWP · Word · Excel',
+                      'PDF · HWP · Word · Excel · CSV',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade400,
