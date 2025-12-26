@@ -1,10 +1,25 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../../core/data/history_tips.dart';
 import '../../core/widgets/app_progress.dart';
 
-class BodyCard extends StatelessWidget {
+class BodyCard extends StatefulWidget {
   const BodyCard({super.key});
+
+  @override
+  State<BodyCard> createState() => _BodyCardState();
+}
+
+class _BodyCardState extends State<BodyCard> {
+  late final HistoryTip _tip;
+
+  @override
+  void initState() {
+    super.initState();
+    _tip = historyTips[Random().nextInt(historyTips.length)];
+  }
 
   Color _getProgressColor(double value) {
     if (value >= 0.9) {
@@ -171,7 +186,7 @@ class BodyCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      getTodaysTip().fact,
+                      _tip.fact,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade600,
