@@ -1,0 +1,12 @@
+{
+  "name": "hwp-js-converter",
+  "version": "1.0.0",
+  "description": "HWP to HTML/Text/JSON converter using hwp.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "hwp.js": "^0.0.3"
+  }
+}
