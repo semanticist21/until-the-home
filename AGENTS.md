@@ -26,7 +26,7 @@ flutter build ios --release   # iOS
 
 ## Architecture
 
-```
+```text
 lib/
 ├── core/                    # 공통 유틸리티
 │   ├── theme/              # AppColors, AppTheme
@@ -53,7 +53,7 @@ lib/
 ### UI Framework: Forui
 
 - **Forui** 사용 (shadcn/ui 스타일의 Flutter 컴포넌트 라이브러리)
-- 공식 문서: https://forui.dev
+- 공식 문서: <https://forui.dev>
 
 ### Theme
 
@@ -79,10 +79,10 @@ AppButton(
 )
 ```
 
-| App Component | Forui Widget | 위치 |
-|---------------|--------------|------|
-| `AppButton` | `FButton` | `lib/core/widgets/app_button.dart` |
-| `AppSectionTitle` | - | `lib/core/widgets/app_section_title.dart` |
+| App Component     | Forui Widget | 위치                                      |
+|-------------------|--------------|-------------------------------------------|
+| `AppButton`       | `FButton`    | `lib/core/widgets/app_button.dart`        |
+| `AppSectionTitle` | -            | `lib/core/widgets/app_section_title.dart` |
 
 ## Platform Configuration
 
