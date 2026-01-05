@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Kkomi** - Flutter application for document conversion (PDF, HWP).
 
 - **Package ID**: com.kobbokkom.kkomi
-- **Flutter SDK**: ^3.11.0-93.1.beta
+- **Flutter SDK**: ^3.10.0
 
 ## Development Commands
 
