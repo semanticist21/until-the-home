@@ -19,11 +19,11 @@ class RecentDocument {
   final DateTime openedAt;
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'name': name,
-        'type': type,
-        'openedAt': openedAt.toIso8601String(),
-      };
+    'path': path,
+    'name': name,
+    'type': type,
+    'openedAt': openedAt.toIso8601String(),
+  };
 
   static RecentDocument fromJson(Map<String, dynamic> json) {
     return RecentDocument(
@@ -110,5 +110,54 @@ class RecentDocumentsStore {
       return 'FILE';
     }
     return ext.toUpperCase();
+  }
+
+  /// 개발용: 샘플 데이터 로드
+  void loadSampleData() {
+    final now = DateTime.now();
+    documents.value = [
+      RecentDocument(
+        path: 'test_samples/sample.hwp',
+        name: 'sample.hwp',
+        type: 'HWP',
+        openedAt: now.subtract(const Duration(minutes: 5)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.pdf',
+        name: 'sample.pdf',
+        type: 'PDF',
+        openedAt: now.subtract(const Duration(minutes: 30)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.docx',
+        name: 'sample.docx',
+        type: 'DOCX',
+        openedAt: now.subtract(const Duration(hours: 1)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.xlsx',
+        name: 'sample.xlsx',
+        type: 'XLSX',
+        openedAt: now.subtract(const Duration(hours: 2)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.pptx',
+        name: 'sample.pptx',
+        type: 'PPTX',
+        openedAt: now.subtract(const Duration(days: 1)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.rtf',
+        name: 'sample.rtf',
+        type: 'RTF',
+        openedAt: now.subtract(const Duration(days: 2)),
+      ),
+      RecentDocument(
+        path: 'test_samples/sample.txt',
+        name: 'sample.txt',
+        type: 'TXT',
+        openedAt: now.subtract(const Duration(days: 3)),
+      ),
+    ];
   }
 }

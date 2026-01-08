@@ -43,6 +43,7 @@ dependencies:
   shared_preferences: ^2.3.2
   webview_flutter: ^4.10.0
   timeago: ^3.7.1
+  pdfrx: ^2.2.20
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +70,7 @@ flutter:
   assets:
     - assets/images/formats/
     - assets/images/icons/
+    - test_samples/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -37,16 +37,19 @@ class _HeaderState extends State<Header> {
             onTapUp: (_) => setState(() => _isSettingsPressed = false),
             onTapCancel: () => setState(() => _isSettingsPressed = false),
             onTap: widget.onSettingsTap,
-            child: Icon(
-              RemixIcons.settings_3_fill,
-              size: 22,
-              color: Colors.grey.shade500,
-            ).animate(target: _isSettingsPressed ? 1 : 0).scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(0.9, 0.9),
-                  duration: 100.ms,
-                  curve: Curves.easeOut,
-                ),
+            child:
+                Icon(
+                      RemixIcons.settings_3_fill,
+                      size: 22,
+                      color: Colors.grey.shade500,
+                    )
+                    .animate(target: _isSettingsPressed ? 1 : 0)
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(0.9, 0.9),
+                      duration: 100.ms,
+                      curve: Curves.easeOut,
+                    ),
           ),
         ],
       ),

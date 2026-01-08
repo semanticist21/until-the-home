@@ -1,0 +1,4 @@
+This is a sample text file for testing document conversion.
+Kkomi App Test Document
+Line 3: Lorem ipsum dolor sit amet.
+Line 4: 한글 테스트 문장입니다.
