@@ -1,24 +1,72 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:pdfrx/pdfrx.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   const PdfViewerScreen({
     super.key,
     required this.assetPath,
     required this.title,
+    this.isAsset = true,
   });
 
   final String assetPath;
   final String title;
+  final bool isAsset;
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
-  final _controller = PdfViewerController();
+  PdfControllerPinch? _controller;
   int _currentPage = 1;
   int _totalPages = 0;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPdf();
+  }
+
+  Future<void> _initPdf() async {
+    try {
+      PdfDocument document;
+      if (widget.isAsset) {
+        // Asset 파일을 임시 파일로 복사 후 로드
+        final byteData = await rootBundle.load(widget.assetPath);
+        final tempDir = await getTemporaryDirectory();
+        final fileName = widget.assetPath.split('/').last;
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+        document = await PdfDocument.openFile(tempFile.path);
+      } else {
+        document = await PdfDocument.openFile(widget.assetPath);
+      }
+
+      setState(() {
+        _controller = PdfControllerPinch(document: Future.value(document));
+        _totalPages = document.pagesCount;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,65 +81,76 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.grey.shade800,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.zoom_out),
-            onPressed: () => _controller.zoomDown(),
-            tooltip: '축소',
-          ),
-          IconButton(
-            icon: const Icon(Icons.zoom_in),
-            onPressed: () => _controller.zoomUp(),
-            tooltip: '확대',
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PdfViewer.asset(
-              widget.assetPath,
-              controller: _controller,
-              params: PdfViewerParams(
-                backgroundColor: Colors.grey.shade200,
-                // 페이지 너비에 맞춤 (가로 모드에서도 적절한 크기)
-                calculateInitialZoom:
-                    (document, controller, fitZoom, coverZoom) {
-                      return coverZoom;
-                    },
-                // 화면 회전 시 현재 페이지 너비에 맞춤
-                onViewSizeChanged: (viewSize, oldViewSize, controller) {
-                  if (oldViewSize != null) {
-                    // 프레임 완료 후 + 200ms 딜레이 (공식 문서 권장)
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Future.delayed(const Duration(milliseconds: 200), () {
-                        if (!mounted) return;
-                        final matrix = controller.calcMatrixFitWidthForPage(
-                          pageNumber: _currentPage,
-                        );
-                        if (matrix != null) {
-                          controller.goTo(matrix);
-                        }
-                      });
-                    });
-                  }
-                },
-                onViewerReady: (document, controller) {
-                  setState(() {
-                    _totalPages = document.pages.length;
-                  });
-                },
-                onPageChanged: (pageNumber) {
-                  setState(() {
-                    _currentPage = pageNumber ?? 1;
-                  });
-                },
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('PDF 로딩 중...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                'PDF를 열 수 없습니다',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: PdfViewPinch(
+            controller: _controller!,
+            onPageChanged: (page) {
+              setState(() {
+                _currentPage = page;
+              });
+            },
+            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+              options: const DefaultBuilderOptions(),
+              documentLoaderBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              pageLoaderBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              errorBuilder: (_, error) => Center(child: Text(error.toString())),
             ),
           ),
-          _buildBottomBar(),
-        ],
-      ),
+        ),
+        _buildBottomBar(),
+      ],
     );
   }
 
@@ -116,7 +175,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             IconButton(
               icon: const Icon(Icons.chevron_left),
               onPressed: _currentPage > 1
-                  ? () => _controller.goToPage(pageNumber: _currentPage - 1)
+                  ? () => _controller?.previousPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    )
                   : null,
               color: Colors.grey.shade700,
             ),
@@ -140,7 +202,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             IconButton(
               icon: const Icon(Icons.chevron_right),
               onPressed: _currentPage < _totalPages
-                  ? () => _controller.goToPage(pageNumber: _currentPage + 1)
+                  ? () => _controller?.nextPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeIn,
+                    )
                   : null,
               color: Colors.grey.shade700,
             ),

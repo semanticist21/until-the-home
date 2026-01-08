@@ -147,16 +147,10 @@ class RecentDocumentsStore {
         openedAt: now.subtract(const Duration(days: 1)),
       ),
       RecentDocument(
-        path: 'test_samples/sample.rtf',
-        name: 'sample.rtf',
-        type: 'RTF',
-        openedAt: now.subtract(const Duration(days: 2)),
-      ),
-      RecentDocument(
         path: 'test_samples/sample.txt',
         name: 'sample.txt',
         type: 'TXT',
-        openedAt: now.subtract(const Duration(days: 3)),
+        openedAt: now.subtract(const Duration(days: 2)),
       ),
     ];
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
+import '../docx_viewer/index.dart';
 import '../pdf_viewer/index.dart';
+import '../txt_viewer/index.dart';
 
 class RecentDocuments extends StatefulWidget {
   const RecentDocuments({super.key});
@@ -141,7 +143,33 @@ class _RecentDocumentsState extends State<RecentDocuments> {
           builder: (_) => PdfViewerScreen(assetPath: doc.path, title: doc.name),
         ),
       );
+    } else if (doc.type == 'TXT') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TxtViewerScreen(
+            filePath: doc.path,
+            title: doc.name,
+            isAsset: true,
+          ),
+        ),
+      );
+    } else if (doc.type == 'DOCX' ||
+        doc.type == 'DOC' ||
+        doc.type == 'XLSX' ||
+        doc.type == 'XLS' ||
+        doc.type == 'PPTX' ||
+        doc.type == 'PPT') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => DocxViewerScreen(
+            filePath: doc.path,
+            title: doc.name,
+            isAsset: true,
+          ),
+        ),
+      );
     }
+    // HWP, HWPX는 서버 변환(Gotenberg) 필요
   }
 }
 
@@ -224,8 +252,6 @@ class _DocumentItem extends StatelessWidget {
       case 'PPT':
       case 'PPTX':
         return const Color(0xFFD84315);
-      case 'RTF':
-        return const Color(0xFF5E35B1);
       case 'TXT':
         return const Color(0xFF546E7A);
       case 'CSV':
