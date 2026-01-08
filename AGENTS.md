@@ -93,8 +93,6 @@ AppButton(
 
 문서 변환 서버가 Synology NAS에서 Gotenberg Docker로 실행 중.
 
-### Gotenberg API (외부 접속용 - DDNS)
-
 - **Base URL**: `https://kkomjang.synology.me:4000`
 - **엔드포인트**: `/forms/libreoffice/convert`
 - **지원 포맷**: HWP, HWPX, DOC, DOCX, XLS, XLSX, PPT, PPTX, RTF, ODT, TXT 등 → PDF
@@ -107,19 +105,4 @@ curl https://kkomjang.synology.me:4000/health
 curl -X POST "https://kkomjang.synology.me:4000/forms/libreoffice/convert" \
   -F "files=@document.hwp" \
   -o output.pdf
-
-# 여러 파일 병합
-curl -X POST "https://kkomjang.synology.me:4000/forms/libreoffice/convert" \
-  -F "files=@doc1.docx" \
-  -F "files=@doc2.xlsx" \
-  -o merged.pdf
 ```
-
-### 내부 네트워크 (로컬 개발용)
-
-- **Gotenberg**: `http://192.168.0.171:4000`
-- **hwp.js API**: `http://192.168.0.171:3002` (텍스트 추출용)
-
-### Docker 파일 위치
-
-- `docker/hwp-js-converter/` - hwp.js (HWP→HTML/Text)

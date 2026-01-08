@@ -35,6 +35,8 @@ class OpenFileButton extends StatelessWidget {
                 'docx',
                 'xls',
                 'xlsx',
+                'ppt',
+                'pptx',
                 'csv',
               ],
             );
@@ -69,7 +71,7 @@ class OpenFileButton extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'PDF · HWP · Word · Excel · CSV',
+                      'PDF · HWP · Word · Excel · PPT · CSV',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade400,
