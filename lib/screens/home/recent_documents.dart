@@ -112,7 +112,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
                         if (index.isOdd) {
                           return Divider(
                             height: 1,
-                            color: Colors.grey.shade200,
+                            color: const Color.fromRGBO(238, 238, 238, 1),
                           );
                         }
                         final doc = documents[index ~/ 2];

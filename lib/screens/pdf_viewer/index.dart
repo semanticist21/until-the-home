@@ -59,17 +59,21 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     (document, controller, fitZoom, coverZoom) {
                       return coverZoom;
                     },
-                // 화면 회전 시 위치 유지
+                // 화면 회전 시 현재 페이지 너비에 맞춤
                 onViewSizeChanged: (viewSize, oldViewSize, controller) {
                   if (oldViewSize != null) {
-                    final centerPosition = controller.value.calcPosition(
-                      oldViewSize,
-                    );
-                    final newMatrix = controller.calcMatrixFor(centerPosition);
-                    Future.delayed(
-                      const Duration(milliseconds: 100),
-                      () => controller.goTo(newMatrix),
-                    );
+                    // 프레임 완료 후 + 200ms 딜레이 (공식 문서 권장)
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Future.delayed(const Duration(milliseconds: 200), () {
+                        if (!mounted) return;
+                        final matrix = controller.calcMatrixFitWidthForPage(
+                          pageNumber: _currentPage,
+                        );
+                        if (matrix != null) {
+                          controller.goTo(matrix);
+                        }
+                      });
+                    });
                   }
                 },
                 onViewerReady: (document, controller) {
@@ -93,7 +97,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
