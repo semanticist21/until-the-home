@@ -29,6 +29,11 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
   bool _isLoading = true;
   String? _error;
 
+  // Page jump mode
+  bool _isPageJumpMode = false;
+  final _pageInputController = TextEditingController();
+  final _pageInputFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -67,11 +72,42 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
   Future<Uint8List> _convertTextToPdf(String text) async {
     final pdf = pw.Document();
 
-    // 한글 지원 폰트 로드
-    final fontData = await rootBundle.load(
-      'assets/fonts/NotoSansCJKkr-Regular.otf',
-    );
-    final font = pw.Font.ttf(fontData);
+    // 다국어 지원 폰트 로드
+    final fontDataList = await Future.wait([
+      rootBundle.load('assets/fonts/NotoSansKR-Regular.ttf'), // Korean
+      rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf'), // Japanese
+      rootBundle.load(
+        'assets/fonts/NotoSansSC-Regular.ttf',
+      ), // Chinese Simplified
+      rootBundle.load(
+        'assets/fonts/NotoSansTC-Regular.ttf',
+      ), // Chinese Traditional
+      rootBundle.load('assets/fonts/NotoSansThai-Regular.ttf'), // Thai
+      rootBundle.load('assets/fonts/NotoSansArabic-Regular.ttf'), // Arabic
+      rootBundle.load('assets/fonts/NotoSansHebrew-Regular.ttf'), // Hebrew
+      rootBundle.load('assets/fonts/NotoSansDevanagari-Regular.ttf'), // Hindi
+      rootBundle.load(
+        'assets/fonts/NotoSansCyrillic-Regular.ttf',
+      ), // Russian/Ukrainian
+      rootBundle.load('assets/fonts/NotoSansGreek-Regular.ttf'), // Greek
+      rootBundle.load('assets/fonts/NotoSansGeorgian-Regular.ttf'), // Georgian
+      rootBundle.load('assets/fonts/NotoSansArmenian-Regular.ttf'), // Armenian
+      rootBundle.load('assets/fonts/NotoSansBengali-Regular.ttf'), // Bengali
+      rootBundle.load('assets/fonts/NotoSansTamil-Regular.ttf'), // Tamil
+      rootBundle.load(
+        'assets/fonts/NotoSansVietnamese-Regular.ttf',
+      ), // Vietnamese
+      rootBundle.load('assets/fonts/NotoSansMath-Regular.ttf'), // Math symbols
+      rootBundle.load('assets/fonts/NotoSansSymbols-Regular.ttf'), // Symbols
+      rootBundle.load(
+        'assets/fonts/NotoSansSymbols2-Regular.ttf',
+      ), // More symbols
+      rootBundle.load('assets/fonts/NotoSans-Regular.ttf'), // Latin (fallback)
+    ]);
+
+    final fonts = fontDataList.map((data) => pw.Font.ttf(data)).toList();
+    final primaryFont = fonts[0]; // Korean as primary
+    final fallbackFonts = fonts.sublist(1); // Rest as fallbacks
 
     // 텍스트를 라인별로 분리
     final lines = text.split('\n');
@@ -99,7 +135,8 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
                       child: pw.Text(
                         line.isEmpty ? ' ' : line,
                         style: pw.TextStyle(
-                          font: font,
+                          font: primaryFont,
+                          fontFallback: fallbackFonts,
                           fontSize: 11,
                           lineSpacing: 1.5,
                         ),
@@ -119,7 +156,45 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _pageInputController.dispose();
+    _pageInputFocusNode.dispose();
     super.dispose();
+  }
+
+  void _togglePageJumpMode() {
+    setState(() {
+      _isPageJumpMode = !_isPageJumpMode;
+      if (_isPageJumpMode) {
+        _pageInputController.text = _currentPage.toString();
+        // Focus and select all text after build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _pageInputFocusNode.requestFocus();
+          _pageInputController.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _pageInputController.text.length,
+          );
+        });
+      } else {
+        _pageInputController.clear();
+      }
+    });
+  }
+
+  void _jumpToPage() {
+    final pageNum = int.tryParse(_pageInputController.text);
+    if (pageNum != null && pageNum >= 1 && pageNum <= _totalPages) {
+      _controller?.jumpToPage(pageNum);
+      _togglePageJumpMode();
+    } else {
+      // Invalid page - show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('1 ~ $_totalPages 사이의 페이지를 입력하세요'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -223,49 +298,151 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: _currentPage > 1
-                  ? () => _controller?.previousPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                    )
-                  : null,
-              color: Colors.grey.shade700,
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$_currentPage / $_totalPages',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _currentPage < _totalPages
-                  ? () => _controller?.nextPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeIn,
-                    )
-                  : null,
-              color: Colors.grey.shade700,
-            ),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: _isPageJumpMode ? _buildPageJumpBar() : _buildNavigationBar(),
         ),
       ),
+    );
+  }
+
+  Widget _buildNavigationBar() {
+    return Row(
+      key: const ValueKey('navigation'),
+      children: [
+        // Left spacer for balance
+        const SizedBox(width: 40),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _currentPage > 1
+                    ? () => _controller?.previousPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                      )
+                    : null,
+                color: Colors.grey.shade700,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$_currentPage / $_totalPages',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _currentPage < _totalPages
+                    ? () => _controller?.nextPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeIn,
+                      )
+                    : null,
+                color: Colors.grey.shade700,
+              ),
+            ],
+          ),
+        ),
+        // Page jump button on the right
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: _togglePageJumpMode,
+          color: Colors.grey.shade600,
+          tooltip: '페이지 이동',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageJumpBar() {
+    return Row(
+      key: const ValueKey('pageJump'),
+      children: [
+        Expanded(
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.description_outlined,
+                  size: 20,
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _pageInputController,
+                    focusNode: _pageInputFocusNode,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.go,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                    decoration: InputDecoration(
+                      hintText: '1 ~ $_totalPages',
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onSubmitted: (_) => _jumpToPage(),
+                  ),
+                ),
+                Text(
+                  '/ $_totalPages',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _jumpToPage,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      size: 20,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Close button
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _togglePageJumpMode,
+          color: Colors.grey.shade600,
+          tooltip: '닫기',
+        ),
+      ],
     );
   }
 }

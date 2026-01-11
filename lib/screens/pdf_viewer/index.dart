@@ -28,6 +28,11 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool _isLoading = true;
   String? _error;
 
+  // Page jump mode
+  bool _isPageJumpMode = false;
+  final _pageInputController = TextEditingController();
+  final _pageInputFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -65,7 +70,45 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _pageInputController.dispose();
+    _pageInputFocusNode.dispose();
     super.dispose();
+  }
+
+  void _togglePageJumpMode() {
+    setState(() {
+      _isPageJumpMode = !_isPageJumpMode;
+      if (_isPageJumpMode) {
+        _pageInputController.text = _currentPage.toString();
+        // Focus and select all text after build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _pageInputFocusNode.requestFocus();
+          _pageInputController.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _pageInputController.text.length,
+          );
+        });
+      } else {
+        _pageInputController.clear();
+      }
+    });
+  }
+
+  void _jumpToPage() {
+    final pageNum = int.tryParse(_pageInputController.text);
+    if (pageNum != null && pageNum >= 1 && pageNum <= _totalPages) {
+      _controller?.jumpToPage(pageNum);
+      _togglePageJumpMode();
+    } else {
+      // Invalid page - shake or show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('1 ~ $_totalPages 사이의 페이지를 입력하세요'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -169,49 +212,151 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: _currentPage > 1
-                  ? () => _controller?.previousPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                    )
-                  : null,
-              color: Colors.grey.shade700,
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$_currentPage / $_totalPages',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _currentPage < _totalPages
-                  ? () => _controller?.nextPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeIn,
-                    )
-                  : null,
-              color: Colors.grey.shade700,
-            ),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: _isPageJumpMode ? _buildPageJumpBar() : _buildNavigationBar(),
         ),
       ),
+    );
+  }
+
+  Widget _buildNavigationBar() {
+    return Row(
+      key: const ValueKey('navigation'),
+      children: [
+        // Left spacer for balance
+        const SizedBox(width: 40),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _currentPage > 1
+                    ? () => _controller?.previousPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                      )
+                    : null,
+                color: Colors.grey.shade700,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$_currentPage / $_totalPages',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _currentPage < _totalPages
+                    ? () => _controller?.nextPage(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeIn,
+                      )
+                    : null,
+                color: Colors.grey.shade700,
+              ),
+            ],
+          ),
+        ),
+        // Page jump button on the right
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: _togglePageJumpMode,
+          color: Colors.grey.shade600,
+          tooltip: '페이지 이동',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageJumpBar() {
+    return Row(
+      key: const ValueKey('pageJump'),
+      children: [
+        Expanded(
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.description_outlined,
+                  size: 20,
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _pageInputController,
+                    focusNode: _pageInputFocusNode,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.go,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                    decoration: InputDecoration(
+                      hintText: '1 ~ $_totalPages',
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onSubmitted: (_) => _jumpToPage(),
+                  ),
+                ),
+                Text(
+                  '/ $_totalPages',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _jumpToPage,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      size: 20,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Close button
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _togglePageJumpMode,
+          color: Colors.grey.shade600,
+          tooltip: '닫기',
+        ),
+      ],
     );
   }
 }
