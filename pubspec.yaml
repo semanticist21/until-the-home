@@ -48,6 +48,8 @@ dependencies:
   path_provider: ^2.1.5
   docx_file_viewer:
     path: packages/docx_file_viewer
+  csv: ^6.0.0
+  data_table_2: ^2.7.2
 
 dev_dependencies:
   flutter_test:

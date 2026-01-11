@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/widgets/search_bottom_bar.dart';
+
 class DocxViewerScreen extends StatefulWidget {
   const DocxViewerScreen({
     super.key,
@@ -194,154 +196,39 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: _showSearchInput ? _buildSearchInput() : _buildSearchButton(),
-      ),
-    );
-  }
-
-  Widget _buildSearchButton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
+    return ListenableBuilder(
+      listenable: _searchController,
+      builder: (context, _) {
+        return SearchBottomBar(
+          showSearchInput: _showSearchInput,
+          searchController: _searchTextController,
+          searchFocusNode: _searchFocusNode,
+          onSearchChanged: (value) {
+            if (value.isNotEmpty) {
+              _searchController.search(value);
+            } else {
+              _searchController.clear();
+            }
+          },
+          onSearchToggle: () {
             setState(() {
               _showSearchInput = true;
             });
             _searchFocusNode.requestFocus();
           },
-          color: Colors.grey.shade700,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _searchTextController,
-            focusNode: _searchFocusNode,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: '검색...',
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade500),
-              ),
-            ),
-            onChanged: (value) {
-              if (value.isNotEmpty) {
-                _searchController.search(value);
-              } else {
-                _searchController.clear();
-              }
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        ListenableBuilder(
-          listenable: _searchController,
-          builder: (context, _) {
-            final matchCount = _searchController.matchCount;
-            final currentIndex = _searchController.currentMatchIndex;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (matchCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${currentIndex + 1} / $matchCount',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_up, size: 20),
-                  onPressed: matchCount > 0
-                      ? () => _searchController.previousMatch()
-                      : null,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  color: Colors.grey.shade700,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                  onPressed: matchCount > 0
-                      ? () => _searchController.nextMatch()
-                      : null,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  color: Colors.grey.shade700,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () {
-                    setState(() {
-                      _showSearchInput = false;
-                      _searchTextController.clear();
-                      _searchController.clear();
-                    });
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  color: Colors.grey.shade700,
-                ),
-              ],
-            );
+          onSearchClose: () {
+            setState(() {
+              _showSearchInput = false;
+              _searchTextController.clear();
+              _searchController.clear();
+            });
           },
-        ),
-      ],
+          matchCount: _searchController.matchCount,
+          currentMatchIndex: _searchController.currentMatchIndex,
+          onPreviousMatch: () => _searchController.previousMatch(),
+          onNextMatch: () => _searchController.nextMatch(),
+        );
+      },
     );
   }
 }

@@ -141,9 +141,9 @@ class RecentDocumentsStore {
         openedAt: now.subtract(const Duration(hours: 2)),
       ),
       RecentDocument(
-        path: 'test_samples/sample.pptx',
-        name: 'sample.pptx',
-        type: 'PPTX',
+        path: 'test_samples/sample.csv',
+        name: 'sample.csv',
+        type: 'CSV',
         openedAt: now.subtract(const Duration(days: 1)),
       ),
       RecentDocument(
