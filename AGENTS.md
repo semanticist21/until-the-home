@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Kkomi** - Flutter application for document conversion (PDF, HWP).
+**Kkomi** - Flutter document viewer/converter app supporting PDF, HWP, Office documents.
 
 - **Package ID**: com.kobbokkom.kkomi
-- **Flutter SDK**: ^3.10.0
+- **Dart SDK**: ^3.10.0
 
 ## Development Commands
 
@@ -28,9 +28,10 @@ flutter build ios --release   # iOS
 
 ```text
 lib/
-├── core/                    # 공통 유틸리티
-│   ├── theme/              # AppColors, AppTheme
-│   └── widgets/            # 재사용 가능한 공통 위젯 (App* 접두사)
+├── core/
+│   ├── theme/              # AppColors, AppTheme (Forui 테마)
+│   ├── data/               # 데이터 레이어 (RecentDocumentsStore 등)
+│   └── widgets/            # 재사용 공통 위젯 (App* 접두사)
 │
 ├── screens/                # 화면별 모듈
 │   └── [screen]/
@@ -47,6 +48,11 @@ lib/
 - 화면 전용 컴포넌트: `header.dart`, `body.dart` 등 (재사용 안 하는 것)
 - 재사용 컴포넌트만 `core/widgets/`에 배치
 - 재사용 안 하는 컴포넌트는 inline 처리
+
+### 지원 파일 포맷
+
+- **뷰어 지원**: PDF, TXT, DOCX
+- **파일 선택 지원**: PDF, HWP, HWPX, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV
 
 ## Design System
 
@@ -66,23 +72,38 @@ Color palette (warm brown/golden tones):
 - **Secondary**: `#FDDC64` - Golden yellow (background)
 - **Neutral**: Warm beige scale
 
-### Component Wrapping Pattern
+### 공통 위젯
 
-Forui 위젯을 `App*` 접두사로 래핑하여 공통 컴포넌트화:
+| Component         | 용도                          |
+|-------------------|-------------------------------|
+| `AppSectionTitle` | 섹션 제목                     |
+| `AppProgress`     | 프로그레스 인디케이터         |
+| `AppAdBanner`     | Google AdMob 배너             |
 
-```dart
-// 사용 예시
-AppButton(
-  label: 'Save',
-  variant: AppButtonVariant.primary,
-  onPressed: () {},
-)
-```
+## Key Dependencies
 
-| App Component     | Forui Widget | 위치                                      |
-|-------------------|--------------|-------------------------------------------|
-| `AppButton`       | `FButton`    | `lib/core/widgets/app_button.dart`        |
-| `AppSectionTitle` | -            | `lib/core/widgets/app_section_title.dart` |
+- **forui**: UI 컴포넌트 프레임워크
+- **pdfx**: PDF 뷰어
+- **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링)
+- **file_picker**: 파일 선택
+- **google_mobile_ads**: 광고
+- **shared_preferences**: 로컬 저장소 (최근 문서 기록)
+
+## Document Viewers
+
+### PDF Viewer (`lib/screens/pdf_viewer/`)
+
+- **패키지**: pdfx (PdfViewPinch)
+- **기능**: 핀치 줌, 페이지 네비게이션
+- **UI**: 하단바에 페이지 표시 (< 1/14 >)
+
+### DOCX Viewer (`lib/screens/docx_viewer/`)
+
+- **패키지**: docx_file_viewer v1.0.1
+- **모드**: paged (페이지 단위 렌더링)
+- **기능**: 핀치 줌, 텍스트 검색, 텍스트 선택
+- **UI**: 하단바에 검색 버튼 (확장 시 검색 입력 + 네비게이션)
+- **설정**: `DocxViewConfig` - padding, pageMode, showPageBreaks 등
 
 ## Platform Configuration
 

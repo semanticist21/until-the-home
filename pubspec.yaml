@@ -45,8 +45,8 @@ dependencies:
   timeago: ^3.7.1
   pdfx: ^2.6.0
   pdf: ^3.11.1
-  universal_file_viewer: ^0.1.2
   path_provider: ^2.1.5
+  docx_file_viewer: ^1.0.1
 
 dev_dependencies:
   flutter_test:
