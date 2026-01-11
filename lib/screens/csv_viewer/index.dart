@@ -4,6 +4,7 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/search_bottom_bar.dart';
 
 class CsvViewerScreen extends StatefulWidget {
@@ -127,16 +128,7 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('CSV 로딩 중...'),
-          ],
-        ),
-      );
+      return const AppLoading();
     }
 
     if (_error != null) {
@@ -212,10 +204,7 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
         child: ScrollbarTheme(
-          data: const ScrollbarThemeData(
-            mainAxisMargin: 0,
-            crossAxisMargin: 0,
-          ),
+          data: const ScrollbarThemeData(mainAxisMargin: 0, crossAxisMargin: 0),
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SizedBox(
@@ -274,8 +263,9 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
 
     return List.generate(columnCount, (index) {
       final letter = String.fromCharCode(65 + (index % 26));
-      final prefix =
-          index >= 26 ? String.fromCharCode(65 + (index ~/ 26) - 1) : '';
+      final prefix = index >= 26
+          ? String.fromCharCode(65 + (index ~/ 26) - 1)
+          : '';
       return DataColumn(
         label: Text(
           '$prefix$letter',
@@ -299,7 +289,8 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
         ),
         cells: row.map((cell) {
           final cellText = cell.toString();
-          final isHighlighted = _searchQuery.isNotEmpty &&
+          final isHighlighted =
+              _searchQuery.isNotEmpty &&
               cellText.toLowerCase().contains(_searchQuery);
 
           return DataCell(
@@ -311,8 +302,9 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
                   color: isHighlighted
                       ? Colors.blue.shade700
                       : Colors.grey.shade700,
-                  fontWeight:
-                      isHighlighted ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isHighlighted
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 ),
               ),
             ),

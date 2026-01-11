@@ -6,6 +6,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
 
+import '../../core/widgets/app_loading.dart';
+
 class TxtViewerScreen extends StatefulWidget {
   const TxtViewerScreen({
     super.key,
@@ -217,16 +219,7 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('텍스트를 PDF로 변환 중...'),
-          ],
-        ),
-      );
+      return const AppLoading();
     }
 
     if (_error != null) {

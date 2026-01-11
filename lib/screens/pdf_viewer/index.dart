@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../../core/widgets/app_loading.dart';
+
 class PdfViewerScreen extends StatefulWidget {
   const PdfViewerScreen({
     super.key,
@@ -131,16 +133,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('PDF 로딩 중...'),
-          ],
-        ),
-      );
+      return const AppLoading();
     }
 
     if (_error != null) {

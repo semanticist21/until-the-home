@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/search_bottom_bar.dart';
 
 class DocxViewerScreen extends StatefulWidget {
@@ -126,16 +127,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
     }
 
     if (!_isFileReady) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('문서 로딩 중...'),
-          ],
-        ),
-      );
+      return const AppLoading();
     }
 
     return Stack(
@@ -177,20 +169,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
             _buildBottomBar(),
           ],
         ),
-        if (_isDocxParsing)
-          Container(
-            color: Colors.grey.shade200,
-            child: const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('문서 파싱 중...'),
-                ],
-              ),
-            ),
-          ),
+        if (_isDocxParsing) const AppLoadingOverlay(),
       ],
     );
   }
