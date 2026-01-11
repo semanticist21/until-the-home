@@ -23,7 +23,8 @@ class DocxViewerScreen extends StatefulWidget {
 
 class _DocxViewerScreenState extends State<DocxViewerScreen> {
   File? _file;
-  bool _isLoading = true;
+  bool _isFileReady = false;
+  bool _isDocxParsing = true;
   String? _error;
   bool _showSearchInput = false;
   final _searchController = DocxSearchController();
@@ -33,7 +34,10 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _prepareFile();
+    // 네비게이션 애니메이션 완료 후 파일 로드 시작 (~300ms)
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _prepareFile();
+    });
   }
 
   @override
@@ -54,18 +58,19 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
         await tempFile.writeAsBytes(byteData.buffer.asUint8List());
         setState(() {
           _file = tempFile;
-          _isLoading = false;
+          _isFileReady = true;
         });
       } else {
         setState(() {
           _file = File(widget.filePath);
-          _isLoading = false;
+          _isFileReady = true;
         });
       }
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _isLoading = false;
+        _isFileReady = true;
+        _isDocxParsing = false;
       });
     }
   }
@@ -89,19 +94,6 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('문서 로딩 중...'),
-          ],
-        ),
-      );
-    }
-
     if (_error != null) {
       return Center(
         child: Padding(
@@ -131,35 +123,72 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
       );
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: DocxView(
-            file: _file!,
-            searchController: _searchController,
-            config: DocxViewConfig(
-              enableZoom: true,
-              enableSearch: true,
-              enableSelection: true,
-              pageMode: DocxPageMode.continuous,
-              pageWidth: 360,
-              minScale: 0.5,
-              maxScale: 4.0,
-              backgroundColor: Colors.grey.shade200,
-              showPageBreaks: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-            onLoaded: () {
-              debugPrint('DOCX loaded successfully');
-            },
-            onError: (error) {
-              setState(() {
-                _error = error.toString();
-              });
-            },
-          ),
+    if (!_isFileReady) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('문서 로딩 중...'),
+          ],
         ),
-        _buildBottomBar(),
+      );
+    }
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: DocxView(
+                file: _file!,
+                searchController: _searchController,
+                config: DocxViewConfig(
+                  enableZoom: true,
+                  enableSearch: true,
+                  enableSelection: true,
+                  pageMode: DocxPageMode.continuous,
+                  pageWidth: 360,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  backgroundColor: Colors.grey.shade200,
+                  showPageBreaks: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+                onLoaded: () {
+                  debugPrint('DOCX loaded successfully');
+                  setState(() {
+                    _isDocxParsing = false;
+                  });
+                },
+                onError: (error) {
+                  setState(() {
+                    _error = error.toString();
+                  });
+                },
+              ),
+            ),
+            _buildBottomBar(),
+          ],
+        ),
+        if (_isDocxParsing)
+          Container(
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('문서 파싱 중...'),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
