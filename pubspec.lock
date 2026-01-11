@@ -148,10 +148,9 @@ packages:
   docx_file_viewer:
     dependency: "direct main"
     description:
-      name: docx_file_viewer
-      sha256: "16f1389be382cceb5e0a2213cf77ad59eed797d9cc42cab3c32933a882e8dc4a"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/docx_file_viewer"
+      relative: true
+    source: path
     version: "1.0.1"
   equatable:
     dependency: transitive

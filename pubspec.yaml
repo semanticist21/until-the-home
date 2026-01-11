@@ -46,7 +46,8 @@ dependencies:
   pdfx: ^2.6.0
   pdf: ^3.11.1
   path_provider: ^2.1.5
-  docx_file_viewer: ^1.0.1
+  docx_file_viewer:
+    path: packages/docx_file_viewer
 
 dev_dependencies:
   flutter_test:

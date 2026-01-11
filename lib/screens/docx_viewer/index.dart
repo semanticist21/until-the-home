@@ -141,12 +141,13 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
               enableZoom: true,
               enableSearch: true,
               enableSelection: true,
-              pageMode: DocxPageMode.paged,
+              pageMode: DocxPageMode.continuous,
+              pageWidth: 360,
               minScale: 0.5,
               maxScale: 4.0,
               backgroundColor: Colors.grey.shade200,
               showPageBreaks: true,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             onLoaded: () {
               debugPrint('DOCX loaded successfully');
