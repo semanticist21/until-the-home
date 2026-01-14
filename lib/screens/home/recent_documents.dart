@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
-import '../csv_viewer/index.dart';
-import '../docx_viewer/index.dart';
-import '../pdf_viewer/index.dart';
-import '../txt_viewer/index.dart';
+import 'recent-documents-handler-csv.dart';
+import 'recent-documents-handler-doc.dart';
+import 'recent-documents-handler-docx.dart';
+import 'recent-documents-handler-hwp.dart';
+import 'recent-documents-handler-hwpx.dart';
+import 'recent-documents-handler-pdf.dart';
+import 'recent-documents-handler-txt.dart';
+import 'recent-documents-handler-xls.dart';
+import 'recent-documents-handler-xlsx.dart';
 
 class RecentDocuments extends StatefulWidget {
   const RecentDocuments({super.key});
@@ -138,48 +143,23 @@ class _RecentDocumentsState extends State<RecentDocuments> {
   }
 
   void _onDocumentTap(BuildContext context, RecentDocument doc) {
-    if (doc.type == 'PDF') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PdfViewerScreen(assetPath: doc.path, title: doc.name),
-        ),
-      );
-    } else if (doc.type == 'TXT') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TxtViewerScreen(
-            filePath: doc.path,
-            title: doc.name,
-            isAsset: true,
-          ),
-        ),
-      );
-    } else if (doc.type == 'CSV') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => CsvViewerScreen(
-            filePath: doc.path,
-            title: doc.name,
-            isAsset: true,
-          ),
-        ),
-      );
-    } else if (doc.type == 'DOCX' ||
-        doc.type == 'DOC' ||
-        doc.type == 'XLSX' ||
-        doc.type == 'XLS') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => DocxViewerScreen(
-            filePath: doc.path,
-            title: doc.name,
-            isAsset: true,
-          ),
-        ),
-      );
+    final handlers = [
+      openRecentDocumentPdf,
+      openRecentDocumentTxt,
+      openRecentDocumentCsv,
+      openRecentDocumentDoc,
+      openRecentDocumentDocx,
+      openRecentDocumentXls,
+      openRecentDocumentXlsx,
+      openRecentDocumentHwp,
+      openRecentDocumentHwpx,
+    ];
+
+    for (final handler in handlers) {
+      if (handler(context, doc)) {
+        return;
+      }
     }
-    // HWP, HWPX는 서버 변환(Gotenberg) 필요
-    // PPT, PPTX는 뷰어 라이브러리 없음
   }
 }
 
