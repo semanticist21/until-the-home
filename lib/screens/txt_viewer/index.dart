@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:pdfx/pdfx.dart' as pdfx;
+import 'package:pdfrx/pdfrx.dart' as pdfrx;
 
+import '../../core/utils/pdf_export_utils.dart';
 import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/search_bottom_bar.dart';
+import '../pdf_viewer/index.dart';
 
 class TxtViewerScreen extends StatefulWidget {
   const TxtViewerScreen({
@@ -25,21 +28,29 @@ class TxtViewerScreen extends StatefulWidget {
 }
 
 class _TxtViewerScreenState extends State<TxtViewerScreen> {
-  pdfx.PdfControllerPinch? _controller;
+  pdfrx.PdfViewerController? _controller;
+  pdfrx.PdfTextSearcher? _textSearcher;
+  pdfrx.PdfDocument? _document;
+  Uint8List? _pdfBytes;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isLoading = true;
   String? _error;
 
-  // Page jump mode
-  bool _isPageJumpMode = false;
-  final _pageInputController = TextEditingController();
-  final _pageInputFocusNode = FocusNode();
+  // Search
+  bool _showSearchInput = false;
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+  int _matchCount = 0;
+  int? _currentMatchIndex;
 
   @override
   void initState() {
     super.initState();
-    _loadAndConvert();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _loadAndConvert();
+    });
   }
 
   Future<void> _loadAndConvert() async {
@@ -56,11 +67,18 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
       final pdfBytes = await _convertTextToPdf(textContent);
 
       // 3. PDF 문서 열기
-      final document = await pdfx.PdfDocument.openData(pdfBytes);
+      final document = await pdfrx.PdfDocument.openData(pdfBytes);
+
+      final controller = pdfrx.PdfViewerController();
+      final textSearcher = pdfrx.PdfTextSearcher(controller)
+        ..addListener(_updateSearchResults);
 
       setState(() {
-        _controller = pdfx.PdfControllerPinch(document: Future.value(document));
-        _totalPages = document.pagesCount;
+        _pdfBytes = pdfBytes;
+        _document = document;
+        _controller = controller;
+        _textSearcher = textSearcher;
+        _totalPages = document.pages.length;
         _isLoading = false;
       });
     } catch (e) {
@@ -76,7 +94,7 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
 
     // 다국어 지원 폰트 로드
     final fontDataList = await Future.wait([
-      rootBundle.load('assets/fonts/NotoSansKR-Regular.ttf'), // Korean
+      rootBundle.load('assets/fonts/NotoSansKR-Regular.ttf'), // Korean + Latin
       rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf'), // Japanese
       rootBundle.load(
         'assets/fonts/NotoSansSC-Regular.ttf',
@@ -90,7 +108,7 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
       rootBundle.load('assets/fonts/NotoSansDevanagari-Regular.ttf'), // Hindi
       rootBundle.load(
         'assets/fonts/NotoSansCyrillic-Regular.ttf',
-      ), // Russian/Ukrainian
+      ), // Russian/Ukrainian + Latin Extended
       rootBundle.load('assets/fonts/NotoSansGreek-Regular.ttf'), // Greek
       rootBundle.load('assets/fonts/NotoSansGeorgian-Regular.ttf'), // Georgian
       rootBundle.load('assets/fonts/NotoSansArmenian-Regular.ttf'), // Armenian
@@ -104,7 +122,6 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
       rootBundle.load(
         'assets/fonts/NotoSansSymbols2-Regular.ttf',
       ), // More symbols
-      rootBundle.load('assets/fonts/NotoSans-Regular.ttf'), // Latin (fallback)
     ]);
 
     final fonts = fontDataList.map((data) => pw.Font.ttf(data)).toList();
@@ -157,46 +174,64 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
 
   @override
   void dispose() {
-    _controller?.dispose();
-    _pageInputController.dispose();
-    _pageInputFocusNode.dispose();
+    _textSearcher?.removeListener(_updateSearchResults);
+    _textSearcher?.dispose();
+    _document?.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void _togglePageJumpMode() {
+  void _updateSearchResults() {
+    if (mounted) {
+      setState(() {
+        _matchCount = _textSearcher?.matches.length ?? 0;
+      });
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_textSearcher == null) return;
+
     setState(() {
-      _isPageJumpMode = !_isPageJumpMode;
-      if (_isPageJumpMode) {
-        _pageInputController.text = _currentPage.toString();
-        // Focus and select all text after build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _pageInputFocusNode.requestFocus();
-          _pageInputController.selection = TextSelection(
-            baseOffset: 0,
-            extentOffset: _pageInputController.text.length,
-          );
-        });
-      } else {
-        _pageInputController.clear();
-      }
+      _searchQuery = query;
+      _currentMatchIndex = null;
+      _matchCount = 0;
+    });
+
+    if (_searchQuery.isEmpty) {
+      _textSearcher!.resetTextSearch();
+      return;
+    }
+
+    // Use PdfTextSearcher for searching
+    _textSearcher!.startTextSearch(_searchQuery, caseInsensitive: true);
+
+    // Match count will be updated by listener
+    // Navigate to first match when available
+    if (_textSearcher!.matches.isNotEmpty) {
+      setState(() {
+        _currentMatchIndex = 0;
+      });
+      _textSearcher!.goToMatchOfIndex(0);
+    }
+  }
+
+  void _onPreviousMatch() {
+    if (_textSearcher == null || _matchCount == 0) return;
+    setState(() {
+      final index = (_currentMatchIndex ?? 0) - 1;
+      _currentMatchIndex = index < 0 ? _matchCount - 1 : index;
+      _textSearcher!.goToMatchOfIndex(_currentMatchIndex ?? 0);
     });
   }
 
-  void _jumpToPage() {
-    final pageNum = int.tryParse(_pageInputController.text);
-    if (pageNum != null && pageNum >= 1 && pageNum <= _totalPages) {
-      _controller?.jumpToPage(pageNum);
-      _togglePageJumpMode();
-    } else {
-      // Invalid page - show feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('1 ~ $_totalPages 사이의 페이지를 입력하세요'),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  void _onNextMatch() {
+    if (_textSearcher == null || _matchCount == 0) return;
+    setState(() {
+      _currentMatchIndex = ((_currentMatchIndex ?? -1) + 1) % _matchCount;
+      _textSearcher!.goToMatchOfIndex(_currentMatchIndex ?? 0);
+    });
   }
 
   @override
@@ -212,9 +247,61 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.grey.shade800,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _exportToPdf,
+            tooltip: 'PDF로 저장',
+          ),
+        ],
       ),
       body: _buildBody(),
     );
+  }
+
+  Future<void> _exportToPdf() async {
+    if (_pdfBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF 생성 중입니다. 잠시 후 다시 시도하세요.')),
+      );
+      return;
+    }
+
+    try {
+      // 이미 생성된 PDF 바이트를 저장
+      final pdfPath = await PdfExportUtils.savePdfToTemp(
+        _pdfBytes!,
+        widget.title,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF로 저장되었습니다'),
+            action: SnackBarAction(
+              label: '열기',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PdfViewerScreen(
+                      assetPath: pdfPath,
+                      title: '${widget.title} (PDF)',
+                      isAsset: false,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('PDF 저장 실패: ${e.toString()}')));
+      }
+    }
   }
 
   Widget _buildBody() {
@@ -254,20 +341,26 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
     return Column(
       children: [
         Expanded(
-          child: pdfx.PdfViewPinch(
-            controller: _controller!,
-            onPageChanged: (page) {
-              setState(() {
-                _currentPage = page;
-              });
-            },
-            builders: pdfx.PdfViewPinchBuilders<pdfx.DefaultBuilderOptions>(
-              options: const pdfx.DefaultBuilderOptions(),
-              documentLoaderBuilder: (_) =>
+          child: pdfrx.PdfViewer.data(
+            _pdfBytes!,
+            sourceName: widget.title,
+            controller: _controller,
+            params: pdfrx.PdfViewerParams(
+              matchTextColor: Colors.yellow.shade100,
+              activeMatchTextColor: Colors.orange.shade200,
+              pagePaintCallbacks: [
+                if (_textSearcher != null)
+                  _textSearcher!.pageTextMatchPaintCallback,
+              ],
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page ?? 1;
+                });
+              },
+              loadingBannerBuilder: (context, bytesDownloaded, totalBytes) =>
                   const Center(child: CircularProgressIndicator()),
-              pageLoaderBuilder: (_) =>
-                  const Center(child: CircularProgressIndicator()),
-              errorBuilder: (_, error) => Center(child: Text(error.toString())),
+              errorBannerBuilder: (context, error, stackTrace, documentRef) =>
+                  Center(child: Text(error.toString())),
             ),
           ),
         ),
@@ -277,165 +370,74 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: _isPageJumpMode ? _buildPageJumpBar() : _buildNavigationBar(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationBar() {
-    return Row(
-      key: const ValueKey('navigation'),
-      children: [
-        // Left spacer for balance
-        const SizedBox(width: 40),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: _currentPage > 1
-                    ? () => _controller?.previousPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      )
-                    : null,
-                color: Colors.grey.shade700,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$_currentPage / $_totalPages',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _currentPage < _totalPages
-                    ? () => _controller?.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeIn,
-                      )
-                    : null,
-                color: Colors.grey.shade700,
-              ),
-            ],
-          ),
-        ),
-        // Page jump button on the right
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: _togglePageJumpMode,
-          color: Colors.grey.shade600,
-          tooltip: '페이지 이동',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPageJumpBar() {
-    return Row(
-      key: const ValueKey('pageJump'),
-      children: [
-        Expanded(
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
+    return SearchBottomBar(
+      showSearchInput: _showSearchInput,
+      searchController: _searchController,
+      searchFocusNode: _searchFocusNode,
+      onSearchChanged: _onSearchChanged,
+      onSearchToggle: () {
+        setState(() {
+          _showSearchInput = true;
+        });
+        _searchFocusNode.requestFocus();
+      },
+      onSearchClose: () {
+        _textSearcher?.resetTextSearch();
+        setState(() {
+          _showSearchInput = false;
+          _searchController.clear();
+          _searchQuery = '';
+          _matchCount = 0;
+          _currentMatchIndex = null;
+        });
+      },
+      matchCount: _matchCount,
+      currentMatchIndex: _currentMatchIndex,
+      onPreviousMatch: _onPreviousMatch,
+      onNextMatch: _onNextMatch,
+      infoWidget: _showSearchInput
+          ? null
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.description_outlined,
-                  size: 20,
-                  color: Colors.grey.shade500,
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _currentPage > 1
+                      ? () =>
+                            _controller?.goToPage(pageNumber: _currentPage - 1)
+                      : null,
+                  color: Colors.grey.shade700,
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _pageInputController,
-                    focusNode: _pageInputFocusNode,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.go,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
-                    decoration: InputDecoration(
-                      hintText: '1 ~ $_totalPages',
-                      hintStyle: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade400,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onSubmitted: (_) => _jumpToPage(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ),
-                Text(
-                  '/ $_totalPages',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _jumpToPage,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      size: 20,
-                      color: Colors.grey.shade600,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$_currentPage / $_totalPages',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _currentPage < _totalPages
+                      ? () =>
+                            _controller?.goToPage(pageNumber: _currentPage + 1)
+                      : null,
+                  color: Colors.grey.shade700,
+                ),
               ],
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Close button
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _togglePageJumpMode,
-          color: Colors.grey.shade600,
-          tooltip: '닫기',
-        ),
-      ],
     );
   }
 }

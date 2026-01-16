@@ -20,9 +20,16 @@ dart analyze             # Analyze code
 flutter test             # Run tests
 flutter test test/widget_test.dart  # Run single test
 
-# Build
+# Production Build
+# 1. Remove PDFium WASM modules (4MB reduction, Web-only)
+dart run pdfrx:remove_wasm_modules
+
+# 2. Build release
 flutter build apk --release   # Android
 flutter build ios --release   # iOS
+
+# 3. Restore WASM for development
+dart run pdfrx:remove_wasm_modules --revert
 ```
 
 ## Architecture
@@ -52,9 +59,10 @@ lib/
 
 ### 지원 파일 포맷
 
-- **뷰어 지원**: PDF, TXT, DOCX, CSV
-- **뷰어 미지원 (라이브러리 없음)**: HWP, HWPX, DOC, XLS, XLSX, PPT, PPTX
-- **파일 선택 지원**: PDF, HWP, HWPX, DOC, DOCX, XLS, XLSX, CSV, TXT
+- **네이티브 뷰어 지원**: PDF, TXT, DOCX, CSV
+- **변환 후 뷰어 지원**: HWP, HWPX, PPTX (NAS API → PDF 변환)
+- **뷰어 미지원**: DOC, XLS, XLSX, PPT
+- **파일 선택 지원**: PDF, HWP, HWPX, DOC, DOCX, XLS, XLSX, PPTX, CSV, TXT
 
 ## Design System
 
@@ -85,7 +93,8 @@ Color palette (warm brown/golden tones):
 ## Key Dependencies
 
 - **forui**: UI 컴포넌트 프레임워크
-- **pdfx**: PDF 뷰어
+- **pdfrx**: PDF 뷰어
+- **pdf**: PDF 생성 (CSV/TXT → PDF 변환)
 - **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링)
 - **csv**: CSV 파싱
 - **file_picker**: 파일 선택
@@ -96,7 +105,7 @@ Color palette (warm brown/golden tones):
 
 ### PDF Viewer (`lib/screens/pdf_viewer/`)
 
-- **패키지**: pdfx (PdfViewPinch)
+- **패키지**: pdfrx (PdfViewPinch)
 - **기능**: 핀치 줌, 페이지 네비게이션
 - **UI**: 하단바에 페이지 표시 (< 1/14 >)
 
@@ -111,8 +120,16 @@ Color palette (warm brown/golden tones):
 ### CSV Viewer (`lib/screens/csv_viewer/`)
 
 - **패키지**: csv (CsvToListConverter)
-- **기능**: 테이블 형태 표시, 검색, 행 필터링
+- **기능**: 테이블 형태 표시, 검색, 행 필터링, PDF 내보내기
 - **UI**: DataTable, 하단바에 행×열 정보 + 검색 버튼
+- **PDF 내보내기**: AppBar 우측에 PDF 아이콘 버튼, 클릭 시 CSV → PDF 변환 후 뷰어로 열기
+
+### TXT Viewer (`lib/screens/txt_viewer/`)
+
+- **패키지**: pdf (문서 생성), pdfrx (뷰어)
+- **기능**: TXT → PDF 자동 변환, 다국어 폰트 지원, 검색, PDF 저장
+- **UI**: PDF 뷰어 형태, 하단바에 페이지 네비게이션 + 검색 버튼
+- **PDF 저장**: AppBar 우측에 PDF 아이콘 버튼, 클릭 시 임시 파일로 저장 후 뷰어로 열기
 
 ## Platform Configuration
 
@@ -125,19 +142,32 @@ Synology NAS에서 커스텀 HWP 변환 서버 운영 중.
 
 ### 엔드포인트
 
-- **외부 URL**: `https://kkomjang.synology.me:4000/convert`
-- **내부 URL**: `http://192.168.0.171:3131/convert`
-- **메서드**: `POST` (multipart/form-data, field: `file`)
+| 포트 | 서비스 | 용도 | URL |
+|------|--------|------|-----|
+| **4000** | Flask (HWP 변환) | HWP → PDF | `https://kkomjang.synology.me:4000/convert` |
+| **4001** | Gotenberg (Office 변환) | PPTX/DOCX/XLSX → PDF | `https://kkomjang.synology.me:4001/forms/libreoffice/convert` |
+| **3131** | Flask (내부) | HWP 변환 (내부) | `http://192.168.0.171:3131/convert` |
+| **3000** | Gotenberg (내부) | Office 변환 (내부) | `http://192.168.0.171:3000/forms/libreoffice/convert` |
+
+- **메서드**: `POST` (multipart/form-data)
+- **필드명**: `file` (Flask), `files` (Gotenberg)
 
 ### 변환 파이프라인
 
+**HWP 변환 (2단계)**:
 ```
 HWP → ODT (pyhwp/hwp5odt) → PDF (LibreOffice headless)
 ```
-
 - **pyhwp**: Python 라이브러리, `hwp5odt` 명령어로 HWP → ODT 변환
 - **LibreOffice**: ODT → PDF 변환 (headless 모드)
 - Gotenberg 기본 LibreOffice는 HWP 미지원 → 커스텀 Flask API 구현
+
+**PPTX/Office 변환 (1단계)**:
+```
+PPTX/DOCX/XLSX → PDF (LibreOffice headless, Gotenberg)
+```
+- **Gotenberg**: LibreOffice가 Office 포맷을 네이티브 지원
+- **변환 속도**: HWP보다 2배 이상 빠름 (중간 단계 없음)
 
 ### Docker 구성
 

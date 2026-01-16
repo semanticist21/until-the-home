@@ -24,10 +24,17 @@ class _AppAdBannerState extends State<AppAdBanner> {
     throw UnsupportedError('Unsupported platform');
   }
 
+  // Check if current platform supports ads
+  static bool get _isAdSupportedPlatform {
+    return Platform.isAndroid || Platform.isIOS;
+  }
+
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    if (_isAdSupportedPlatform) {
+      _loadAd();
+    }
   }
 
   void _loadAd() {

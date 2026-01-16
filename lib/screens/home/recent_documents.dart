@@ -8,6 +8,7 @@ import 'recent_documents_handler_docx.dart';
 import 'recent_documents_handler_hwp.dart';
 import 'recent_documents_handler_hwpx.dart';
 import 'recent_documents_handler_pdf.dart';
+import 'recent_documents_handler_pptx.dart';
 import 'recent_documents_handler_txt.dart';
 import 'recent_documents_handler_xls.dart';
 import 'recent_documents_handler_xlsx.dart';
@@ -153,6 +154,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
       openRecentDocumentXlsx,
       openRecentDocumentHwp,
       openRecentDocumentHwpx,
+      openRecentDocumentPptx,
     ];
 
     for (final handler in handlers) {
@@ -239,6 +241,9 @@ class _DocumentItem extends StatelessWidget {
       case 'XLS':
       case 'XLSX':
         return const Color(0xFF1D6F42);
+      case 'PPT':
+      case 'PPTX':
+        return const Color(0xFFD84315);
       case 'TXT':
         return const Color(0xFF546E7A);
       case 'CSV':
@@ -250,5 +255,9 @@ class _DocumentItem extends StatelessWidget {
 }
 
 String _formatDate(DateTime openedAt) {
-  return timeago.format(openedAt, locale: 'ko');
+  try {
+    return timeago.format(openedAt, locale: 'ko');
+  } catch (_) {
+    return timeago.format(openedAt);
+  }
 }

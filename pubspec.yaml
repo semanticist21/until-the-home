@@ -43,13 +43,14 @@ dependencies:
   shared_preferences: ^2.3.2
   webview_flutter: ^4.10.0
   timeago: ^3.7.1
-  pdfx: ^2.6.0
+  pdfrx: ^2.2.24
   pdf: ^3.11.1
   path_provider: ^2.1.5
   docx_file_viewer:
     path: packages/docx_file_viewer
   csv: ^6.0.0
   data_table_2: ^2.7.2
+  logger: ^2.5.0
 
 dev_dependencies:
   flutter_test:

@@ -11,18 +11,14 @@ import '../../core/data/recent_documents_store.dart';
 import '../../core/widgets/app_loading.dart';
 import '../pdf_viewer/index.dart';
 
-bool openRecentDocumentHwp(BuildContext context, RecentDocument doc) {
-  if (doc.type != 'HWP') {
+bool openRecentDocumentPptx(BuildContext context, RecentDocument doc) {
+  if (doc.type != 'PPTX') {
     return false;
   }
 
-  return openRecentDocumentHwpLike(context, doc);
-}
-
-bool openRecentDocumentHwpLike(BuildContext context, RecentDocument doc) {
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => _HwpPdfViewerScreen(
+      builder: (_) => _PptxPdfViewerScreen(
         filePath: doc.path,
         title: doc.name,
         isAsset: _isAssetPath(doc.path),
@@ -40,8 +36,8 @@ bool _isAssetPath(String path) {
   }
 }
 
-class _HwpPdfViewerScreen extends StatefulWidget {
-  const _HwpPdfViewerScreen({
+class _PptxPdfViewerScreen extends StatefulWidget {
+  const _PptxPdfViewerScreen({
     required this.filePath,
     required this.title,
     required this.isAsset,
@@ -52,11 +48,12 @@ class _HwpPdfViewerScreen extends StatefulWidget {
   final bool isAsset;
 
   @override
-  State<_HwpPdfViewerScreen> createState() => _HwpPdfViewerScreenState();
+  State<_PptxPdfViewerScreen> createState() => _PptxPdfViewerScreenState();
 }
 
-class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
-  static const _gotenbergUrl = 'https://kkomjang.synology.me:4000/convert';
+class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
+  static const _gotenbergUrl =
+      'https://kkomjang.synology.me:4001/forms/libreoffice/convert';
 
   bool _isConverting = true;
   String? _errorMessage;
@@ -212,7 +209,7 @@ class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
-              'HWP 변환에 실패했습니다',
+              'PPTX 변환에 실패했습니다',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

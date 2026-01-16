@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdfx/pdfx.dart';
+import 'package:pdfrx/pdfrx.dart';
 
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/search_bottom_bar.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   const PdfViewerScreen({
@@ -24,44 +26,87 @@ class PdfViewerScreen extends StatefulWidget {
 }
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
-  PdfControllerPinch? _controller;
+  PdfViewerController? _controller;
+  PdfTextSearcher? _textSearcher;
+  PdfDocument? _document;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isLoading = true;
   String? _error;
 
-  // Page jump mode
-  bool _isPageJumpMode = false;
-  final _pageInputController = TextEditingController();
-  final _pageInputFocusNode = FocusNode();
+  // Search
+  bool _showSearchInput = false;
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+  int _matchCount = 0;
+  int? _currentMatchIndex;
 
   @override
   void initState() {
     super.initState();
+    appLogger.d(
+      '[PDF_VIEWER] initState - path: ${widget.assetPath}, isAsset: ${widget.isAsset}',
+    );
     _initPdf();
   }
 
   Future<void> _initPdf() async {
+    appLogger.i('[PDF_VIEWER] _initPdf START');
     try {
       PdfDocument document;
       if (widget.isAsset) {
+        appLogger.d('[PDF_VIEWER] Loading as ASSET: ${widget.assetPath}');
         // Asset 파일을 임시 파일로 복사 후 로드
         final byteData = await rootBundle.load(widget.assetPath);
+        appLogger.d(
+          '[PDF_VIEWER] Asset loaded, size: ${byteData.lengthInBytes} bytes',
+        );
         final tempDir = await getTemporaryDirectory();
         final fileName = widget.assetPath.split('/').last;
         final tempFile = File('${tempDir.path}/$fileName');
         await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+        appLogger.d('[PDF_VIEWER] Temp file created: ${tempFile.path}');
         document = await PdfDocument.openFile(tempFile.path);
       } else {
+        appLogger.d('[PDF_VIEWER] Loading as FILE: ${widget.assetPath}');
+        final file = File(widget.assetPath);
+        final exists = await file.exists();
+        appLogger.d('[PDF_VIEWER] File exists: $exists');
+        if (!exists) {
+          throw Exception('File not found: ${widget.assetPath}');
+        }
         document = await PdfDocument.openFile(widget.assetPath);
       }
 
+      appLogger.i(
+        '[PDF_VIEWER] Document opened, pages: ${document.pages.length}',
+      );
+      final controller = PdfViewerController();
+      appLogger.d('[PDF_VIEWER] Controller created');
+
+      if (!mounted) {
+        appLogger.w('[PDF_VIEWER] Widget not mounted, aborting setState');
+        return;
+      }
+
       setState(() {
-        _controller = PdfControllerPinch(document: Future.value(document));
-        _totalPages = document.pagesCount;
+        _document = document;
+        _controller = controller;
+        _totalPages = document.pages.length;
         _isLoading = false;
       });
-    } catch (e) {
+
+      appLogger.i(
+        '[PDF_VIEWER] _initPdf SUCCESS - TextSearcher will be created when search is used',
+      );
+    } catch (e, stackTrace) {
+      appLogger.e(
+        '[PDF_VIEWER] _initPdf ERROR',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -71,46 +116,84 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   @override
   void dispose() {
-    _controller?.dispose();
-    _pageInputController.dispose();
-    _pageInputFocusNode.dispose();
+    _textSearcher?.removeListener(_updateSearchResults);
+    _textSearcher?.dispose();
+    _document?.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void _togglePageJumpMode() {
+  void _updateSearchResults() {
+    if (mounted) {
+      setState(() {
+        _matchCount = _textSearcher?.matches.length ?? 0;
+      });
+    }
+  }
+
+  void _onSearchChanged(String query) {
     setState(() {
-      _isPageJumpMode = !_isPageJumpMode;
-      if (_isPageJumpMode) {
-        _pageInputController.text = _currentPage.toString();
-        // Focus and select all text after build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _pageInputFocusNode.requestFocus();
-          _pageInputController.selection = TextSelection(
-            baseOffset: 0,
-            extentOffset: _pageInputController.text.length,
-          );
-        });
-      } else {
-        _pageInputController.clear();
+      _searchQuery = query;
+      _currentMatchIndex = null;
+      _matchCount = 0;
+    });
+
+    if (_searchQuery.isEmpty) {
+      _textSearcher?.resetTextSearch();
+      return;
+    }
+
+    // Lazy initialization: TextSearcher를 처음 검색할 때 생성
+    if (_textSearcher == null && _controller != null) {
+      try {
+        appLogger.d('[PDF_VIEWER] Creating TextSearcher (lazy initialization)');
+        _textSearcher = PdfTextSearcher(_controller!)
+          ..addListener(_updateSearchResults);
+        appLogger.i('[PDF_VIEWER] TextSearcher created successfully');
+      } catch (e, stackTrace) {
+        appLogger.e(
+          '[PDF_VIEWER] Failed to create TextSearcher',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return;
       }
+    }
+
+    if (_textSearcher == null) {
+      appLogger.w('[PDF_VIEWER] TextSearcher is still null, cannot search');
+      return;
+    }
+
+    // Use PdfTextSearcher for searching
+    _textSearcher!.startTextSearch(_searchQuery, caseInsensitive: true);
+
+    // Match count will be updated by listener
+    // Navigate to first match when available
+    if (_textSearcher!.matches.isNotEmpty) {
+      setState(() {
+        _currentMatchIndex = 0;
+      });
+      _textSearcher!.goToMatchOfIndex(0);
+    }
+  }
+
+  void _onPreviousMatch() {
+    if (_textSearcher == null || _matchCount == 0) return;
+    setState(() {
+      final index = (_currentMatchIndex ?? 0) - 1;
+      _currentMatchIndex = index < 0 ? _matchCount - 1 : index;
+      _textSearcher!.goToMatchOfIndex(_currentMatchIndex ?? 0);
     });
   }
 
-  void _jumpToPage() {
-    final pageNum = int.tryParse(_pageInputController.text);
-    if (pageNum != null && pageNum >= 1 && pageNum <= _totalPages) {
-      _controller?.jumpToPage(pageNum);
-      _togglePageJumpMode();
-    } else {
-      // Invalid page - shake or show feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('1 ~ $_totalPages 사이의 페이지를 입력하세요'),
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  void _onNextMatch() {
+    if (_textSearcher == null || _matchCount == 0) return;
+    setState(() {
+      _currentMatchIndex = ((_currentMatchIndex ?? -1) + 1) % _matchCount;
+      _textSearcher!.goToMatchOfIndex(_currentMatchIndex ?? 0);
+    });
   }
 
   @override
@@ -132,6 +215,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildBody() {
+    appLogger.d(
+      '[PDF_VIEWER] _buildBody - isLoading: $_isLoading, error: $_error, controller: ${_controller != null ? "NOT NULL" : "NULL"}',
+    );
+
     if (_isLoading) {
       return const AppLoading();
     }
@@ -168,22 +255,55 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     return Column(
       children: [
         Expanded(
-          child: PdfViewPinch(
-            controller: _controller!,
-            onPageChanged: (page) {
-              setState(() {
-                _currentPage = page;
-              });
-            },
-            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-              options: const DefaultBuilderOptions(),
-              documentLoaderBuilder: (_) =>
-                  const Center(child: CircularProgressIndicator()),
-              pageLoaderBuilder: (_) =>
-                  const Center(child: CircularProgressIndicator()),
-              errorBuilder: (_, error) => Center(child: Text(error.toString())),
-            ),
-          ),
+          child: widget.isAsset
+              ? PdfViewer.asset(
+                  widget.assetPath,
+                  controller: _controller,
+                  params: PdfViewerParams(
+                    // 투명한 하이라이트 색상으로 텍스트가 보이도록 설정
+                    matchTextColor: Colors.yellow.withOpacity(0.3),
+                    activeMatchTextColor: Colors.orange.withOpacity(0.5),
+                    pagePaintCallbacks: [
+                      if (_textSearcher != null)
+                        _textSearcher!.pageTextMatchPaintCallback,
+                    ],
+                    onPageChanged: (page) {
+                      setState(() {
+                        _currentPage = page ?? 1;
+                      });
+                    },
+                    loadingBannerBuilder:
+                        (context, bytesDownloaded, totalBytes) =>
+                            const Center(child: CircularProgressIndicator()),
+                    errorBannerBuilder:
+                        (context, error, stackTrace, documentRef) =>
+                            Center(child: Text(error.toString())),
+                  ),
+                )
+              : PdfViewer.file(
+                  widget.assetPath,
+                  controller: _controller,
+                  params: PdfViewerParams(
+                    // 투명한 하이라이트 색상으로 텍스트가 보이도록 설정
+                    matchTextColor: Colors.yellow.withOpacity(0.3),
+                    activeMatchTextColor: Colors.orange.withOpacity(0.5),
+                    pagePaintCallbacks: [
+                      if (_textSearcher != null)
+                        _textSearcher!.pageTextMatchPaintCallback,
+                    ],
+                    onPageChanged: (page) {
+                      setState(() {
+                        _currentPage = page ?? 1;
+                      });
+                    },
+                    loadingBannerBuilder:
+                        (context, bytesDownloaded, totalBytes) =>
+                            const Center(child: CircularProgressIndicator()),
+                    errorBannerBuilder:
+                        (context, error, stackTrace, documentRef) =>
+                            Center(child: Text(error.toString())),
+                  ),
+                ),
         ),
         _buildBottomBar(),
       ],
@@ -191,165 +311,88 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+    return SearchBottomBar(
+      showSearchInput: _showSearchInput,
+      searchController: _searchController,
+      searchFocusNode: _searchFocusNode,
+      matchCount: _matchCount,
+      currentMatchIndex: _currentMatchIndex,
+      onSearchToggle: () {
+        setState(() {
+          _showSearchInput = !_showSearchInput;
+          if (!_showSearchInput) {
+            _searchController.clear();
+            _searchQuery = '';
+            _textSearcher?.resetTextSearch();
+            _matchCount = 0;
+            _currentMatchIndex = null;
+          }
+        });
+        if (_showSearchInput) {
+          _searchFocusNode.requestFocus();
+        }
+      },
+      onSearchClose: () {
+        setState(() {
+          _showSearchInput = false;
+          _searchController.clear();
+          _searchQuery = '';
+          _textSearcher?.resetTextSearch();
+          _matchCount = 0;
+          _currentMatchIndex = null;
+        });
+      },
+      onSearchChanged: _onSearchChanged,
+      onPreviousMatch: _onPreviousMatch,
+      onNextMatch: _onNextMatch,
+      infoWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: _currentPage > 1
+                ? () => _controller?.goToPage(pageNumber: _currentPage - 1)
+                : null,
+            color: Colors.grey.shade700,
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: _isPageJumpMode ? _buildPageJumpBar() : _buildNavigationBar(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationBar() {
-    return Row(
-      key: const ValueKey('navigation'),
-      children: [
-        // Left spacer for balance
-        const SizedBox(width: 40),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: _currentPage > 1
-                    ? () => _controller?.previousPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      )
-                    : null,
-                color: Colors.grey.shade700,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$_currentPage / $_totalPages',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _currentPage < _totalPages
-                    ? () => _controller?.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeIn,
-                      )
-                    : null,
-                color: Colors.grey.shade700,
-              ),
-            ],
-          ),
-        ),
-        // Page jump button on the right
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: _togglePageJumpMode,
-          color: Colors.grey.shade600,
-          tooltip: '페이지 이동',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPageJumpBar() {
-    return Row(
-      key: const ValueKey('pageJump'),
-      children: [
-        Expanded(
-          child: Container(
-            height: 40,
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
-              children: [
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.description_outlined,
-                  size: 20,
-                  color: Colors.grey.shade500,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _pageInputController,
-                    focusNode: _pageInputFocusNode,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.go,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
-                    decoration: InputDecoration(
-                      hintText: '1 ~ $_totalPages',
-                      hintStyle: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade400,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onSubmitted: (_) => _jumpToPage(),
-                  ),
-                ),
-                Text(
-                  '/ $_totalPages',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _jumpToPage,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.arrow_forward,
-                      size: 20,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
+            child: Text(
+              '$_currentPage / $_totalPages',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        // Close button
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _togglePageJumpMode,
-          color: Colors.grey.shade600,
-          tooltip: '닫기',
-        ),
-      ],
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _currentPage < _totalPages
+                ? () => _controller?.goToPage(pageNumber: _currentPage + 1)
+                : null,
+            color: Colors.grey.shade700,
+          ),
+        ],
+      ),
     );
   }
+}
+
+class PdfTextRangeWithPage {
+  final int pageNumber;
+  final int startIndex;
+  final int endIndex;
+
+  PdfTextRangeWithPage({
+    required this.pageNumber,
+    required this.startIndex,
+    required this.endIndex,
+  });
 }

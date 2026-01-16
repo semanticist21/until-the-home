@@ -4,8 +4,10 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/utils/pdf_export_utils.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/search_bottom_bar.dart';
+import '../pdf_viewer/index.dart';
 
 class CsvViewerScreen extends StatefulWidget {
   const CsvViewerScreen({
@@ -122,10 +124,8 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
   void _onPreviousMatch() {
     if (_matchPositions.isEmpty) return;
     setState(() {
-      _currentMatchIndex = (_currentMatchIndex ?? 0) - 1;
-      if (_currentMatchIndex! < 0) {
-        _currentMatchIndex = _matchPositions.length - 1;
-      }
+      final index = (_currentMatchIndex ?? 0) - 1;
+      _currentMatchIndex = index < 0 ? _matchPositions.length - 1 : index;
     });
     _scrollToMatch();
   }
@@ -140,9 +140,10 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
   }
 
   void _scrollToMatch() {
-    if (_currentMatchIndex == null || _matchPositions.isEmpty) return;
+    final index = _currentMatchIndex;
+    if (index == null || _matchPositions.isEmpty) return;
 
-    final match = _matchPositions[_currentMatchIndex!];
+    final match = _matchPositions[index];
     const rowHeight = 48.0;
     const headerHeight = 56.0;
     const cellWidth = 150.0;
@@ -186,8 +187,57 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.grey.shade800,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _exportToPdf,
+            tooltip: 'PDF로 내보내기',
+          ),
+        ],
       ),
       body: _buildBody(),
+    );
+  }
+
+  Future<void> _exportToPdf() async {
+    if (_headerRow == null && (_dataRows == null || _dataRows!.isEmpty)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('내보낼 데이터가 없습니다')));
+      return;
+    }
+
+    await PdfExportUtils.showExportDialog(
+      context: context,
+      generatePdf: () => PdfExportUtils.convertCsvToPdf(
+        headerRow: _headerRow,
+        dataRows: _dataRows ?? [],
+        title: widget.title,
+      ),
+      fileName: widget.title,
+      onSuccess: () async {
+        // PDF 저장 후 뷰어로 열기
+        final pdfPath = await PdfExportUtils.savePdfToTemp(
+          await PdfExportUtils.convertCsvToPdf(
+            headerRow: _headerRow,
+            dataRows: _dataRows ?? [],
+            title: widget.title,
+          ),
+          widget.title,
+        );
+
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(
+                assetPath: pdfPath,
+                title: '${widget.title} (PDF)',
+                isAsset: false,
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 
@@ -361,11 +411,12 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
               _searchQuery.isNotEmpty &&
               cellText.toLowerCase().contains(_searchQuery);
 
+          final currentIndex = _currentMatchIndex;
           final isCurrentMatch =
-              _currentMatchIndex != null &&
+              currentIndex != null &&
               _matchPositions.isNotEmpty &&
-              _matchPositions[_currentMatchIndex!].row == rowIndex &&
-              _matchPositions[_currentMatchIndex!].col == colIndex;
+              _matchPositions[currentIndex].row == rowIndex &&
+              _matchPositions[currentIndex].col == colIndex;
 
           return DataCell(
             Container(

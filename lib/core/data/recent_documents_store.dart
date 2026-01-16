@@ -123,6 +123,12 @@ class RecentDocumentsStore {
         openedAt: now.subtract(const Duration(minutes: 5)),
       ),
       RecentDocument(
+        path: 'test_samples/sample.pptx',
+        name: 'sample.pptx',
+        type: 'PPTX',
+        openedAt: now.subtract(const Duration(minutes: 10)),
+      ),
+      RecentDocument(
         path: 'test_samples/sample.pdf',
         name: 'sample.pdf',
         type: 'PDF',
