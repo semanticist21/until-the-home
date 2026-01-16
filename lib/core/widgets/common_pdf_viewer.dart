@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import '../data/weekly_limit_store.dart';
+import '../data/weekly_pages_store.dart';
 import '../utils/app_logger.dart';
 import 'app_loading.dart';
 import 'search_bottom_bar.dart';
@@ -131,6 +133,10 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
         _totalPages = document.pages.length;
         _isLoading = false;
       });
+
+      // 주간 열람/페이지 추적
+      await WeeklyLimitStore.instance.addUsage(1);
+      await WeeklyPagesStore.instance.addPages(_totalPages);
 
       appLogger.i(
         '[COMMON_PDF_VIEWER] _initPdf SUCCESS - TextSearcher will be lazily initialized',

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/data/weekly_limit_store.dart';
+import '../../core/data/weekly_pages_store.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/search_bottom_bar.dart';
 
@@ -69,6 +71,10 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
           _isFileReady = true;
         });
       }
+
+      // 주간 열람/페이지 추적 (DOCX는 페이지 수 산정 불가 → +1)
+      await WeeklyLimitStore.instance.addUsage(1);
+      await WeeklyPagesStore.instance.addPages(1);
     } catch (e) {
       setState(() {
         _error = e.toString();

@@ -5,6 +5,8 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import 'core/data/usage_streak_store.dart';
+import 'core/data/weekly_limit_store.dart';
+import 'core/data/weekly_pages_store.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/home/index.dart';
 
@@ -16,6 +18,10 @@ void main() async {
 
   // 연속 사용일 업데이트
   await UsageStreakStore.instance.updateStreak();
+
+  // 주간 열람/페이지 리셋 체크
+  await WeeklyLimitStore.instance.checkWeeklyReset();
+  await WeeklyPagesStore.instance.checkWeeklyReset();
 
   runApp(const MyApp());
 }

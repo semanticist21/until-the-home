@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/data/history_tips.dart';
 import '../../core/data/usage_streak_store.dart';
+import '../../core/data/weekly_limit_store.dart';
+import '../../core/data/weekly_pages_store.dart';
 import '../../core/widgets/app_progress.dart';
 
 class BodyCard extends StatefulWidget {
@@ -33,9 +35,6 @@ class _BodyCardState extends State<BodyCard> {
 
   @override
   Widget build(BuildContext context) {
-    const currentUsage = 150;
-    const weeklyLimit = 200;
-
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -54,73 +53,81 @@ class _BodyCardState extends State<BodyCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Weekly limit row with count-up animation
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: currentUsage.toDouble()),
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeOutCubic,
-              builder: (context, animatedValue, child) {
-                final progressValue = animatedValue / weeklyLimit;
+            // Weekly usage row with count-up animation
+            ValueListenableBuilder<int>(
+              valueListenable: WeeklyLimitStore.instance.currentUsage,
+              builder: (context, currentUsage, child) {
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: currentUsage.toDouble()),
+                  duration: const Duration(milliseconds: 1200),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, animatedValue, child) {
+                    // 그래프 기준: 100 (100 이상은 100%로 표시)
+                    final progressValue = min(animatedValue / 100.0, 1.0);
+                    final daysUntilReset =
+                        WeeklyLimitStore.instance.daysUntilReset;
 
-                return Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
                       children: [
-                        Image.asset(
-                          'assets/images/icons/usage_empty.webp',
-                          width: 20,
-                          height: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
-                              children: [
-                                Text(
-                                  '주간 한도',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade700,
-                                    height: 1,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '3일 후 초기화',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade400,
-                                    height: 1,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${animatedValue.toInt()} / $weeklyLimit',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade600,
-                                    height: 1,
-                                  ),
-                                ),
-                              ],
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Image.asset(
+                              'assets/images/icons/usage_empty.webp',
+                              width: 20,
+                              height: 20,
                             ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '주간 열람',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade700,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '$daysUntilReset일 후 초기화',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade400,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${animatedValue.toInt()}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade600,
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 28),
+                          child: AppProgress(
+                            value: progressValue,
+                            color: _getProgressColor(progressValue),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 28),
-                      child: AppProgress(
-                        value: progressValue,
-                        color: _getProgressColor(progressValue),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),
@@ -153,17 +160,22 @@ class _BodyCardState extends State<BodyCard> {
                 const SizedBox(width: 16),
                 // Pages viewed
                 Expanded(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 127),
-                    duration: const Duration(milliseconds: 1200),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, child) {
-                      final intValue = value.toInt();
-                      final display = intValue > 999 ? '999+' : '$intValue';
-                      return _StatColumn(
-                        icon: 'assets/images/icons/document_open_empty.webp',
-                        label: '이번 주 열람',
-                        value: '$display페이지',
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: WeeklyPagesStore.instance.currentPages,
+                    builder: (context, currentPages, child) {
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: currentPages.toDouble()),
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          final intValue = value.toInt();
+                          final display = intValue > 999 ? '999+' : '$intValue';
+                          return _StatColumn(
+                            icon: 'assets/images/icons/document_open_empty.webp',
+                            label: '이번 주 페이지',
+                            value: '${display}p',
+                          );
+                        },
                       );
                     },
                   ),
