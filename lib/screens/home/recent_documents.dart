@@ -2,16 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
-import 'recent_documents_handler_csv.dart';
-import 'recent_documents_handler_doc.dart';
-import 'recent_documents_handler_docx.dart';
-import 'recent_documents_handler_hwp.dart';
-import 'recent_documents_handler_hwpx.dart';
-import 'recent_documents_handler_pdf.dart';
-import 'recent_documents_handler_pptx.dart';
-import 'recent_documents_handler_txt.dart';
-import 'recent_documents_handler_xls.dart';
-import 'recent_documents_handler_xlsx.dart';
+import 'recent_documents_handlers.dart';
 
 class RecentDocuments extends StatefulWidget {
   const RecentDocuments({super.key});
@@ -24,10 +15,8 @@ class _RecentDocumentsState extends State<RecentDocuments> {
   @override
   void initState() {
     super.initState();
-    // TODO: 개발 테스트용 - 배포 전 제거
-    RecentDocumentsStore.instance.loadSampleData();
-    // RecentDocumentsStore.instance.load();
-    // RecentDocumentsStore.instance.pruneMissingFiles();
+    RecentDocumentsStore.instance.load();
+    RecentDocumentsStore.instance.pruneMissingFiles();
   }
 
   @override
@@ -144,24 +133,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
   }
 
   void _onDocumentTap(BuildContext context, RecentDocument doc) {
-    final handlers = [
-      openRecentDocumentPdf,
-      openRecentDocumentTxt,
-      openRecentDocumentCsv,
-      openRecentDocumentDoc,
-      openRecentDocumentDocx,
-      openRecentDocumentXls,
-      openRecentDocumentXlsx,
-      openRecentDocumentHwp,
-      openRecentDocumentHwpx,
-      openRecentDocumentPptx,
-    ];
-
-    for (final handler in handlers) {
-      if (handler(context, doc)) {
-        return;
-      }
-    }
+    openRecentDocument(context, doc);
   }
 }
 

@@ -3,16 +3,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../core/data/recent_documents_store.dart';
 import '../../core/utils/app_logger.dart';
-import 'recent_documents_handler_csv.dart';
-import 'recent_documents_handler_doc.dart';
-import 'recent_documents_handler_docx.dart';
-import 'recent_documents_handler_hwp.dart';
-import 'recent_documents_handler_hwpx.dart';
-import 'recent_documents_handler_pdf.dart';
-import 'recent_documents_handler_pptx.dart';
-import 'recent_documents_handler_txt.dart';
-import 'recent_documents_handler_xls.dart';
-import 'recent_documents_handler_xlsx.dart';
+import 'recent_documents_handlers.dart';
 
 class OpenFileButton extends StatelessWidget {
   const OpenFileButton({super.key});
@@ -74,25 +65,11 @@ class OpenFileButton extends StatelessWidget {
 
             if (!context.mounted) return;
 
-            final handlers = [
-              openRecentDocumentPdf,
-              openRecentDocumentTxt,
-              openRecentDocumentCsv,
-              openRecentDocumentDoc,
-              openRecentDocumentDocx,
-              openRecentDocumentXls,
-              openRecentDocumentXlsx,
-              openRecentDocumentHwp,
-              openRecentDocumentHwpx,
-              openRecentDocumentPptx,
-            ];
-
-            appLogger.d('[OPEN_FILE_BUTTON] Trying handlers...');
-            for (final handler in handlers) {
-              if (handler(context, doc)) {
-                appLogger.i('[OPEN_FILE_BUTTON] Handler succeeded');
-                break;
-              }
+            appLogger.d('[OPEN_FILE_BUTTON] Opening viewer...');
+            if (openRecentDocument(context, doc)) {
+              appLogger.i('[OPEN_FILE_BUTTON] Handler succeeded');
+            } else {
+              appLogger.w('[OPEN_FILE_BUTTON] No handler found');
             }
           },
           borderRadius: BorderRadius.circular(16),

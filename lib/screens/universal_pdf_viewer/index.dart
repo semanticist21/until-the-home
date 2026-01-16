@@ -1,76 +1,58 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
-import '../../core/data/recent_documents_store.dart';
+import '../../core/converters/document_converter.dart';
+import '../../core/utils/pdf_export_utils.dart';
 import '../../core/widgets/app_loading.dart';
-import '../pdf_viewer/index.dart';
+import '../../core/widgets/common_pdf_viewer.dart';
 
-bool openRecentDocumentPptx(BuildContext context, RecentDocument doc) {
-  if (doc.type != 'PPTX') {
-    return false;
-  }
-
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => _PptxPdfViewerScreen(
-        filePath: doc.path,
-        title: doc.name,
-        isAsset: _isAssetPath(doc.path),
-      ),
-    ),
-  );
-  return true;
-}
-
-bool _isAssetPath(String path) {
-  // test_samples/ 경로는 asset으로 처리
-  if (path.startsWith('test_samples/')) {
-    return true;
-  }
-  try {
-    return !File(path).existsSync();
-  } catch (_) {
-    return true;
-  }
-}
-
-class _PptxPdfViewerScreen extends StatefulWidget {
-  const _PptxPdfViewerScreen({
+/// 통합 PDF 뷰어
+///
+/// - PDF 파일을 직접 표시하거나
+/// - DocumentConverter를 사용하여 다른 형식을 PDF로 변환 후 표시
+class UniversalPdfViewer extends StatefulWidget {
+  const UniversalPdfViewer({
+    super.key,
     required this.filePath,
     required this.title,
-    required this.isAsset,
+    this.isAsset = false,
+    this.converter,
   });
 
+  /// 원본 파일 경로 (asset 또는 실제 파일 경로)
   final String filePath;
+
+  /// 화면 제목
   final String title;
+
+  /// asset 파일 여부
   final bool isAsset;
 
+  /// PDF 변환기 (null이면 직접 PDF 파일)
+  final DocumentConverter? converter;
+
   @override
-  State<_PptxPdfViewerScreen> createState() => _PptxPdfViewerScreenState();
+  State<UniversalPdfViewer> createState() => _UniversalPdfViewerState();
 }
 
-class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
-  static const _gotenbergUrl =
-      'https://kkomjang.synology.me:4001/forms/libreoffice/convert';
-
+class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
   bool _isConverting = true;
   String? _errorMessage;
   String? _errorDetails;
-  String? _convertedPath;
+  Uint8List? _pdfBytes;
+  String? _convertedPdfPath;
 
   @override
   void initState() {
     super.initState();
-    _convertToPdf();
+    _loadOrConvert();
   }
 
-  Future<void> _convertToPdf() async {
+  Future<void> _loadOrConvert() async {
     setState(() {
       _isConverting = true;
       _errorMessage = null;
@@ -78,27 +60,38 @@ class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
     });
 
     try {
-      final fileBytes = await _loadSourceBytes();
-      final fileName = p.basename(widget.filePath);
-      final pdfBytes = await _requestConversion(fileBytes, fileName);
-      final tempDir = await getTemporaryDirectory();
-      final baseName = p.basenameWithoutExtension(fileName);
-      final outputFile = File(
-        '${tempDir.path}/${baseName}_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await outputFile.writeAsBytes(pdfBytes, flush: true);
+      if (widget.converter != null) {
+        // 변환이 필요한 경우
+        final pdfBytes = await widget.converter!.convertToPdf(
+          widget.filePath,
+          isAsset: widget.isAsset,
+        );
 
-      if (!mounted) {
-        return;
+        // 변환된 PDF를 임시 파일로 저장
+        final tempDir = await getTemporaryDirectory();
+        final baseName = p.basenameWithoutExtension(widget.filePath);
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final outputFile = File(
+          '${tempDir.path}/${baseName}_$timestamp.pdf',
+        );
+        await outputFile.writeAsBytes(pdfBytes, flush: true);
+
+        if (!mounted) return;
+
+        setState(() {
+          _pdfBytes = pdfBytes;
+          _convertedPdfPath = outputFile.path;
+          _isConverting = false;
+        });
+      } else {
+        // 직접 PDF 파일인 경우 - 변환 불필요
+        setState(() {
+          _isConverting = false;
+        });
       }
-      setState(() {
-        _convertedPath = outputFile.path;
-        _isConverting = false;
-      });
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
+
       setState(() {
         final parsed = _parseErrorMessage(e.toString());
         _errorMessage = parsed.message;
@@ -108,83 +101,64 @@ class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
     }
   }
 
-  Future<Uint8List> _loadSourceBytes() async {
-    if (widget.isAsset) {
-      final byteData = await rootBundle.load(widget.filePath);
-      return byteData.buffer.asUint8List();
+  Future<void> _savePdf() async {
+    if (_pdfBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF 생성 중입니다. 잠시 후 다시 시도하세요.')),
+      );
+      return;
     }
 
-    final file = File(widget.filePath);
-    if (!await file.exists()) {
-      throw Exception('파일을 찾을 수 없습니다.');
-    }
-    return file.readAsBytes();
-  }
-
-  Future<Uint8List> _requestConversion(
-    Uint8List fileBytes,
-    String fileName,
-  ) async {
-    final boundary = 'kkomi-boundary-${DateTime.now().millisecondsSinceEpoch}';
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 15);
     try {
-      final request = await client.postUrl(Uri.parse(_gotenbergUrl));
-      request.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'multipart/form-data; boundary=$boundary',
+      final pdfPath = await PdfExportUtils.savePdfToTemp(
+        _pdfBytes!,
+        widget.title,
       );
 
-      request.add(utf8.encode('--$boundary\r\n'));
-      request.add(
-        utf8.encode(
-          'Content-Disposition: form-data; name="file"; '
-          'filename="$fileName"\r\n',
-        ),
-      );
-      request.add(
-        utf8.encode('Content-Type: application/octet-stream\r\n\r\n'),
-      );
-      request.add(fileBytes);
-      request.add(utf8.encode('\r\n--$boundary--\r\n'));
-
-      final response = await request.close().timeout(
-        const Duration(seconds: 20),
-      );
-      final responseBytes = await _readResponseBytes(
-        response,
-      ).timeout(const Duration(seconds: 20));
-      if (response.statusCode != HttpStatus.ok) {
-        throw Exception(
-          '변환 실패 (${response.statusCode}): ${utf8.decode(responseBytes)}',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF로 저장되었습니다: ${p.basename(pdfPath)}'),
+          ),
         );
       }
-      return responseBytes;
-    } finally {
-      client.close(force: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF 저장 실패: ${e.toString()}')),
+        );
+      }
     }
-  }
-
-  Future<Uint8List> _readResponseBytes(HttpClientResponse response) async {
-    final buffer = BytesBuilder();
-    await for (final chunk in response) {
-      buffer.add(chunk);
-    }
-    return buffer.takeBytes();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_convertedPath != null) {
-      debugPrint('[PPTX_VIEWER] Navigating to PDF viewer with converted file');
-      return PdfViewerScreen(
-        assetPath: _convertedPath!,
-        title: widget.title,
-        isAsset: false,
-      );
+    // 변환 완료 후 PDF 뷰어 표시
+    if (!_isConverting && _errorMessage == null) {
+      if (widget.converter != null && _convertedPdfPath != null) {
+        // 변환된 PDF 표시
+        return CommonPdfViewer(
+          filePath: _convertedPdfPath!,
+          title: widget.title,
+          onSave: _savePdf,
+        );
+      } else if (widget.converter == null) {
+        // 원본 PDF 표시
+        if (widget.isAsset) {
+          return CommonPdfViewer(
+            assetPath: widget.filePath,
+            title: widget.title,
+          );
+        } else {
+          return CommonPdfViewer(
+            filePath: widget.filePath,
+            title: widget.title,
+          );
+        }
+      }
     }
 
-    debugPrint('[PPTX_VIEWER] Showing conversion screen: _isConverting=$_isConverting, _errorMessage=$_errorMessage');
+    // 로딩 또는 에러 화면
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
@@ -215,7 +189,7 @@ class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
-              'PPTX 변환에 실패했습니다',
+              '변환에 실패했습니다',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -254,7 +228,7 @@ class _PptxPdfViewerScreenState extends State<_PptxPdfViewerScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            _RetryButton(onTap: _convertToPdf),
+            _RetryButton(onTap: _loadOrConvert),
           ],
         ),
       ),
