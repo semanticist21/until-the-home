@@ -35,6 +35,8 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
   final _searchFocusNode = FocusNode();
   String _searchQuery = '';
   int _matchCount = 0;
+  List<({int row, int col})> _matchPositions = [];
+  int? _currentMatchIndex;
   final _verticalScrollController = ScrollController();
   final _horizontalScrollController = ScrollController();
 
@@ -92,20 +94,83 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query.toLowerCase();
+      _matchPositions = [];
+      _currentMatchIndex = null;
+
       if (_searchQuery.isEmpty) {
         _matchCount = 0;
       } else {
-        int count = 0;
-        for (final row in _dataRows ?? []) {
-          for (final cell in row) {
+        final rows = _dataRows ?? [];
+        for (int rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+          final row = rows[rowIndex];
+          for (int colIndex = 0; colIndex < row.length; colIndex++) {
+            final cell = row[colIndex];
             if (cell.toString().toLowerCase().contains(_searchQuery)) {
-              count++;
+              _matchPositions.add((row: rowIndex, col: colIndex));
             }
           }
         }
-        _matchCount = count;
+        _matchCount = _matchPositions.length;
+        if (_matchPositions.isNotEmpty) {
+          _currentMatchIndex = 0;
+          _scrollToMatch();
+        }
       }
     });
+  }
+
+  void _onPreviousMatch() {
+    if (_matchPositions.isEmpty) return;
+    setState(() {
+      _currentMatchIndex = (_currentMatchIndex ?? 0) - 1;
+      if (_currentMatchIndex! < 0) {
+        _currentMatchIndex = _matchPositions.length - 1;
+      }
+    });
+    _scrollToMatch();
+  }
+
+  void _onNextMatch() {
+    if (_matchPositions.isEmpty) return;
+    setState(() {
+      _currentMatchIndex =
+          ((_currentMatchIndex ?? -1) + 1) % _matchPositions.length;
+    });
+    _scrollToMatch();
+  }
+
+  void _scrollToMatch() {
+    if (_currentMatchIndex == null || _matchPositions.isEmpty) return;
+
+    final match = _matchPositions[_currentMatchIndex!];
+    const rowHeight = 48.0;
+    const headerHeight = 56.0;
+    const cellWidth = 150.0;
+
+    final targetVerticalOffset = (match.row * rowHeight) + headerHeight - 100;
+    final targetHorizontalOffset = (match.col * cellWidth).toDouble();
+
+    if (_verticalScrollController.hasClients) {
+      _verticalScrollController.animateTo(
+        targetVerticalOffset.clamp(
+          0.0,
+          _verticalScrollController.position.maxScrollExtent,
+        ),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+
+    if (_horizontalScrollController.hasClients) {
+      _horizontalScrollController.animateTo(
+        targetHorizontalOffset.clamp(
+          0.0,
+          _horizontalScrollController.position.maxScrollExtent,
+        ),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -287,15 +352,26 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
         color: WidgetStateProperty.all(
           rowIndex.isEven ? Colors.white : Colors.grey.shade50,
         ),
-        cells: row.map((cell) {
+        cells: row.asMap().entries.map((cellEntry) {
+          final colIndex = cellEntry.key;
+          final cell = cellEntry.value;
           final cellText = cell.toString();
+
           final isHighlighted =
               _searchQuery.isNotEmpty &&
               cellText.toLowerCase().contains(_searchQuery);
 
+          final isCurrentMatch =
+              _currentMatchIndex != null &&
+              _matchPositions.isNotEmpty &&
+              _matchPositions[_currentMatchIndex!].row == rowIndex &&
+              _matchPositions[_currentMatchIndex!].col == colIndex;
+
           return DataCell(
             Container(
-              color: isHighlighted ? Colors.yellow.shade100 : null,
+              color: isCurrentMatch
+                  ? Colors.orange.shade200
+                  : (isHighlighted ? Colors.yellow.shade100 : null),
               child: Text(
                 cellText,
                 style: TextStyle(
@@ -337,9 +413,14 @@ class _CsvViewerScreenState extends State<CsvViewerScreen> {
           _searchController.clear();
           _searchQuery = '';
           _matchCount = 0;
+          _matchPositions = [];
+          _currentMatchIndex = null;
         });
       },
       matchCount: _matchCount,
+      currentMatchIndex: _currentMatchIndex,
+      onPreviousMatch: _onPreviousMatch,
+      onNextMatch: _onNextMatch,
       infoWidget: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
