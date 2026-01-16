@@ -4,14 +4,19 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import 'core/data/usage_streak_store.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/home/index.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   pdfrxFlutterInitialize(dismissPdfiumWasmWarnings: true);
   timeago.setLocaleMessages('ko', timeago.KoMessages());
+
+  // 연속 사용일 업데이트
+  await UsageStreakStore.instance.updateStreak();
+
   runApp(const MyApp());
 }
 

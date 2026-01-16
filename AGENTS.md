@@ -129,13 +129,18 @@ Color palette (warm brown/golden tones):
 
 ### 공통 위젯
 
+**위젯 네이밍 규칙**:
+- 재사용 가능한 공통 위젯은 `App*` 접두사 사용
+- 화면 전용 위젯은 접두사 없이 `screens/[screen]/` 내부에 배치
+
 | Component          | 용도                                     |
 |--------------------|------------------------------------------|
-| `AppSectionTitle`  | 섹션 제목                                |
+| `AppSectionTitle`  | 섹션 제목 (trailing 파라미터로 우측 위젯 추가 가능) |
 | `AppProgress`      | 프로그레스 인디케이터                    |
 | `AppAdBanner`      | Google AdMob 배너                        |
 | `AppLoading`       | 전체 화면 로딩 (AppProgress 래퍼)       |
 | `SearchBottomBar`  | 검색 기능이 있는 하단 바 (재사용 가능)  |
+| `CommonPdfViewer`  | 통합 PDF 뷰어 (PDF/TXT/CSV 공통 사용)   |
 
 #### SearchBottomBar 사용법
 
@@ -157,12 +162,36 @@ SearchBottomBar(
 )
 ```
 
+## State Management
+
+- **RecentDocumentsStore** (`lib/core/data/recent_documents_store.dart`):
+  - Singleton pattern으로 구현
+  - `shared_preferences`를 사용한 로컬 영속성
+  - 최근 열람 문서 기록 저장/로드
+  - 메서드: `addDocument()`, `getDocuments()`, `removeDocument()`
+
+- **UsageStreakStore** (`lib/core/data/usage_streak_store.dart`):
+  - Singleton pattern으로 구현
+  - 앱 연속 사용일 추적 (날짜 기반)
+  - 로직: 첫 실행 = 1일, 하루 차이 = +1일, 2일 이상 차이 = 리셋
+  - 메서드: `updateStreak()` (main.dart에서 앱 시작 시 호출)
+  - ValueNotifier: `currentStreak` (홈 화면에서 실시간 표시)
+
+- **WeeklyLimitStore** (`lib/core/data/weekly_limit_store.dart`):
+  - Singleton pattern으로 구현
+  - 주간 사용량 한도 관리 (월요일 기준 리셋)
+  - 기본 한도: 200
+  - 메서드: `checkWeeklyReset()`, `addUsage(amount)`, `setWeeklyLimit(newLimit)`
+  - ValueNotifier: `currentUsage`, `weeklyLimit`
+  - Getters: `remainingUsage`, `usageRatio`, `daysUntilReset`
+  - ⚠️ TODO: main.dart에서 `checkWeeklyReset()` 호출 필요, 문서 열람 시 `addUsage()` 호출 필요
+
 ## Key Dependencies
 
 - **forui**: UI 컴포넌트 프레임워크
 - **pdfrx**: PDF 뷰어 (v2.2.24, PdfTextSearcher 지연 초기화 필요)
 - **pdf**: PDF 생성 (CSV/TXT → PDF 변환)
-- **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링)
+- **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링, local package)
 - **csv**: CSV 파싱
 - **data_table_2**: 고급 DataTable (CSV 뷰어)
 - **file_picker**: 파일 선택
@@ -177,13 +206,30 @@ SearchBottomBar(
 **공통 PDF 뷰어 컴포넌트** - PDF, TXT, CSV 뷰어가 모두 사용하는 통합 뷰어
 
 - **패키지**: pdfrx v2.2.24
-- **입력 타입**: 3가지 지원
+- **입력 타입**: 3가지 지원 (하나만 제공)
   - `pdfBytes`: Uint8List (TXT/CSV 변환 후 사용)
   - `assetPath`: Asset 파일 경로
   - `filePath`: 실제 파일 경로
 - **기능**: 핀치 줌, 페이지 네비게이션, 텍스트 검색
 - **UI**: SearchBottomBar (검색 + 페이지 네비게이션)
 - **콜백**: `onSave` (선택적, PDF 저장 버튼 표시)
+
+**사용 예시**:
+```dart
+// PDF 파일 직접 로드
+CommonPdfViewer(filePath: '/path/to/file.pdf')
+
+// Asset PDF 로드
+CommonPdfViewer(assetPath: 'assets/sample.pdf')
+
+// 변환된 PDF 바이트 로드 (TXT/CSV)
+CommonPdfViewer(
+  pdfBytes: convertedBytes,
+  onSave: () async {
+    // PDF 저장 로직
+  },
+)
+```
 
 #### 검색 기능 (Search)
 
@@ -249,6 +295,18 @@ SearchBottomBar(
 
 - **Android**: `android/app/build.gradle.kts`
 - **iOS**: `ios/Runner.xcodeproj/project.pbxproj`
+
+### Version Management
+
+앱 버전 업데이트 시 `pubspec.yaml`의 `version` 필드 수정:
+
+```yaml
+version: 1.0.0+1  # 형식: major.minor.patch+buildNumber
+```
+
+- **Android**: `buildNumber` → `versionCode`
+- **iOS**: `major.minor.patch` → `CFBundleShortVersionString`, `buildNumber` → `CFBundleVersion`
+- **앱 스토어 심사 제출 시 버전 증가 필수**
 
 ## HWP 변환 API (Synology NAS)
 

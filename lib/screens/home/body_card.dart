@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/data/history_tips.dart';
+import '../../core/data/usage_streak_store.dart';
 import '../../core/widgets/app_progress.dart';
 
 class BodyCard extends StatefulWidget {
@@ -129,17 +130,22 @@ class _BodyCardState extends State<BodyCard> {
               children: [
                 // Streak days
                 Expanded(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 3),
-                    duration: const Duration(milliseconds: 1200),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, child) {
-                      final intValue = value.toInt();
-                      final display = intValue > 999 ? '999+' : '$intValue';
-                      return _StatColumn(
-                        icon: 'assets/images/icons/calendar_bun_empty.webp',
-                        label: '연속 사용',
-                        value: '$display일',
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: UsageStreakStore.instance.currentStreak,
+                    builder: (context, streakCount, child) {
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: streakCount.toDouble()),
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          final intValue = value.toInt();
+                          final display = intValue > 999 ? '999+' : '$intValue';
+                          return _StatColumn(
+                            icon: 'assets/images/icons/calendar_bun_empty.webp',
+                            label: '연속 사용',
+                            value: '$display일',
+                          );
+                        },
                       );
                     },
                   ),
