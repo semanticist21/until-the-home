@@ -174,6 +174,53 @@ subprocess.run([
 ], env=env, timeout=180)
 ```
 
+### Worker 설정 및 병렬 처리
+
+**Gunicorn Worker 설정** (`services.conf`):
+
+```ini
+[program:hwpconverter]
+command=gunicorn -b 0.0.0.0:5000 -w 4 --timeout 300 --log-level debug hwp_converter:app
+```
+
+- **Worker 개수**: `-w 4` (동시 처리 가능 요청 수)
+- **권장**: CPU 코어수에 맞춰 설정 (DS224+ = 4코어 → 4 workers)
+
+**병렬 처리 성능**:
+
+| Worker 수 | 4개 동시 요청 처리 시간 | 동시 처리 패턴 |
+|-----------|-------------------------|---------------|
+| 2개 | 9.87초 | 2개씩 배치 처리 (5초 + 10초) |
+| 4개 | 6.00초 | 4개 동시 처리 (~6초) |
+
+**⚠️ Worker 설정 변경 시 주의사항**:
+
+로컬에서 `services.conf` 수정 후 반드시 **컨테이너 안으로 복사** 필요:
+
+```bash
+# 1. 컨테이너에 파일 복사
+sudo docker cp /tmp/services.conf gotenberg-hwp-gotenberg-1:/etc/supervisor/conf.d/services.conf
+
+# 2. 컨테이너 재시작
+sudo docker restart gotenberg-hwp-gotenberg-1
+
+# 3. 설정 확인
+sudo docker exec gotenberg-hwp-gotenberg-1 ps aux | grep gunicorn
+# Master 1개 + Worker N개 = 총 N+1개 프로세스 확인
+```
+
+**테스트 방법**:
+
+```bash
+# 4개 동시 요청 테스트
+for i in {1..4}; do
+  curl -X POST -F "file=@sample.hwp" \
+    https://kkomjang.synology.me:4000/convert \
+    -o test_${i}.pdf &
+done
+wait
+```
+
 ### NAS SSH 접속
 
 ```bash
