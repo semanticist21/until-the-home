@@ -71,9 +71,7 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
         final tempDir = await getTemporaryDirectory();
         final baseName = p.basenameWithoutExtension(widget.filePath);
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final outputFile = File(
-          '${tempDir.path}/${baseName}_$timestamp.pdf',
-        );
+        final outputFile = File('${tempDir.path}/${baseName}_$timestamp.pdf');
         await outputFile.writeAsBytes(pdfBytes, flush: true);
 
         if (!mounted) return;
@@ -117,16 +115,14 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF로 저장되었습니다: ${p.basename(pdfPath)}'),
-          ),
+          SnackBar(content: Text('PDF로 저장되었습니다: ${p.basename(pdfPath)}')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF 저장 실패: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('PDF 저장 실패: ${e.toString()}')));
       }
     }
   }

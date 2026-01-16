@@ -171,7 +171,8 @@ class _BodyCardState extends State<BodyCard> {
                           final intValue = value.toInt();
                           final display = intValue > 999 ? '999+' : '$intValue';
                           return _StatColumn(
-                            icon: 'assets/images/icons/document_open_empty.webp',
+                            icon:
+                                'assets/images/icons/document_open_empty.webp',
                             label: '이번 주 페이지',
                             value: '${display}p',
                           );

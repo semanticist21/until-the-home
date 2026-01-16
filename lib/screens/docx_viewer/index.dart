@@ -160,15 +160,21 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
                   ),
                 ),
                 onLoaded: () {
-                  debugPrint('[DOCX_VIEWER] onLoaded called - removing overlay');
-                  debugPrint('[DOCX_VIEWER] Current state: _isDocxParsing=$_isDocxParsing, _error=$_error');
+                  debugPrint(
+                    '[DOCX_VIEWER] onLoaded called - removing overlay',
+                  );
+                  debugPrint(
+                    '[DOCX_VIEWER] Current state: _isDocxParsing=$_isDocxParsing, _error=$_error',
+                  );
                   // Add slight delay to ensure DocxView is fully rendered before removing overlay
                   Future.delayed(const Duration(milliseconds: 50), () {
                     if (mounted) {
                       setState(() {
                         _isDocxParsing = false;
                       });
-                      debugPrint('[DOCX_VIEWER] Overlay removed, DocxView now visible');
+                      debugPrint(
+                        '[DOCX_VIEWER] Overlay removed, DocxView now visible',
+                      );
                     }
                   });
                 },

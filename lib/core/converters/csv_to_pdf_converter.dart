@@ -13,7 +13,10 @@ class CsvToPdfConverter implements DocumentConverter {
   String get converterType => 'csv';
 
   @override
-  Future<Uint8List> convertToPdf(String filePath, {bool isAsset = false}) async {
+  Future<Uint8List> convertToPdf(
+    String filePath, {
+    bool isAsset = false,
+  }) async {
     // 1. CSV 파일 읽기
     String csvContent;
     if (isAsset) {
@@ -26,9 +29,7 @@ class CsvToPdfConverter implements DocumentConverter {
     final normalizedContent = csvContent
         .replaceAll('\r\n', '\n')
         .replaceAll('\r', '\n');
-    final data = const CsvToListConverter(
-      eol: '\n',
-    ).convert(normalizedContent);
+    final data = const CsvToListConverter(eol: '\n').convert(normalizedContent);
 
     // CSV 데이터 분리
     List<dynamic>? headerRow;

@@ -76,31 +76,35 @@ lib/
 
 ### Document Handler Pattern
 
-파일 열기는 핸들러 체인 패턴 사용 (`lib/screens/home/`):
+파일 열기는 통합 핸들러 사용 (`lib/screens/home/recent_documents_handlers.dart`):
 
 ```dart
-// open_file_button.dart
-final handlers = [
-  openRecentDocumentPdf,
-  openRecentDocumentTxt,
-  openRecentDocumentCsv,
-  // ... other handlers
-];
+// 단일 switch 문으로 통합된 핸들러
+bool openRecentDocument(BuildContext context, RecentDocument doc) {
+  final isAsset = _isAssetPath(doc.path);
 
-for (final handler in handlers) {
-  if (handler(context, doc)) break;  // 처리 완료 시 중단
+  switch (doc.type) {
+    case 'PDF':
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => UniversalPdfViewer(...)),
+      );
+      return true;
+    case 'TXT':
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => UniversalPdfViewer(converter: TxtToPdfConverter())),
+      );
+      return true;
+    // ... other cases
+    default:
+      return false;
+  }
 }
 ```
 
-각 핸들러 함수:
-- **시그니처**: `bool openRecentDocument[Type](BuildContext, RecentDocument)`
-- **반환값**: 처리 성공 시 `true`, 타입 불일치 시 `false`
-- **위치**: `lib/screens/home/recent_documents_handler_[type].dart`
-
-지원 핸들러:
-- PDF, TXT, CSV, DOCX (네이티브 뷰어)
-- HWP, HWPX, PPTX (변환 후 뷰어)
-- DOC, XLS, XLSX (뷰어 미지원, 변환만 제공)
+지원 포맷:
+- PDF, TXT, CSV (네이티브 PDF 뷰어)
+- HWP, HWPX, PPTX (NAS 변환 후 PDF 뷰어)
+- DOCX, DOC, XLS, XLSX (DOCX 뷰어)
 
 ### 지원 파일 포맷
 

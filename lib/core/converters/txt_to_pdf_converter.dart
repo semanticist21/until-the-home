@@ -12,7 +12,10 @@ class TxtToPdfConverter implements DocumentConverter {
   String get converterType => 'txt';
 
   @override
-  Future<Uint8List> convertToPdf(String filePath, {bool isAsset = false}) async {
+  Future<Uint8List> convertToPdf(
+    String filePath, {
+    bool isAsset = false,
+  }) async {
     // 1. TXT 파일 읽기
     String textContent;
     if (isAsset) {
