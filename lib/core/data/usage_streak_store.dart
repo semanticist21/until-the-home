@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_logger.dart';
+import '../utils/date_utils.dart' as date_utils;
 
 /// 앱 연속 사용일 관리
 class UsageStreakStore {
@@ -40,7 +41,7 @@ class UsageStreakStore {
     await load();
 
     final prefs = await SharedPreferences.getInstance();
-    final today = _getTodayString();
+    final today = date_utils.DateUtils.getTodayString();
     final lastUsedDateStr = prefs.getString(_lastUsedDateKey);
 
     appLogger.d(
@@ -61,24 +62,34 @@ class UsageStreakStore {
       return;
     }
 
-    final lastUsedDate = DateTime.parse(lastUsedDateStr);
-    final todayDate = DateTime.parse(today);
-    final daysDiff = todayDate.difference(lastUsedDate).inDays;
-
-    if (daysDiff == 1) {
-      // 하루 차이 (어제 사용) → 연속 사용 +1
-      currentStreak.value += 1;
-      await _save(today, currentStreak.value);
-      appLogger.i(
-        '[UsageStreakStore] Consecutive day → streak=${currentStreak.value}',
+    try {
+      final lastUsedDate = date_utils.DateUtils.parseDate(lastUsedDateStr);
+      final todayDate = date_utils.DateUtils.parseDate(today);
+      final daysDiff = date_utils.DateUtils.daysBetween(
+        lastUsedDate,
+        todayDate,
       );
-    } else {
-      // 2일 이상 차이 → 리셋
+
+      if (daysDiff == 1) {
+        // 하루 차이 (어제 사용) → 연속 사용 +1
+        currentStreak.value += 1;
+        await _save(today, currentStreak.value);
+        appLogger.i(
+          '[UsageStreakStore] Consecutive day → streak=${currentStreak.value}',
+        );
+      } else if (daysDiff > 1) {
+        // 2일 이상 차이 → 리셋
+        currentStreak.value = 1;
+        await _save(today, 1);
+        appLogger.i(
+          '[UsageStreakStore] Reset streak (gap=$daysDiff days) → streak=1',
+        );
+      }
+    } catch (e) {
+      // 날짜 파싱 실패 시 안전하게 리셋
+      appLogger.e('[UsageStreakStore] Date parsing error', error: e);
       currentStreak.value = 1;
       await _save(today, 1);
-      appLogger.i(
-        '[UsageStreakStore] Reset streak (gap=$daysDiff days) → streak=1',
-      );
     }
   }
 
@@ -87,11 +98,5 @@ class UsageStreakStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastUsedDateKey, dateStr);
     await prefs.setInt(_currentStreakKey, streak);
-  }
-
-  /// 오늘 날짜 문자열 (YYYY-MM-DD)
-  String _getTodayString() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }

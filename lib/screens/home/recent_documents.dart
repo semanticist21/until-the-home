@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
+import '../../core/theme/document_colors.dart';
 import 'recent_documents_handlers.dart';
 
 class RecentDocuments extends StatefulWidget {
@@ -163,7 +164,9 @@ class _DocumentItem extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getTypeColor(type).withValues(alpha: 0.1),
+                  color: DocumentColors.getTypeColor(
+                    type,
+                  ).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -172,7 +175,7 @@ class _DocumentItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: _getTypeColor(type),
+                    color: DocumentColors.getTypeColor(type),
                   ),
                 ),
               ),
@@ -198,31 +201,6 @@ class _DocumentItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _getTypeColor(String type) {
-    switch (type) {
-      case 'PDF':
-        return const Color(0xFFE53935);
-      case 'HWP':
-      case 'HWPX':
-        return const Color(0xFF1E88E5);
-      case 'DOC':
-      case 'DOCX':
-        return const Color(0xFF2E7D32);
-      case 'XLS':
-      case 'XLSX':
-        return const Color(0xFF1D6F42);
-      case 'PPT':
-      case 'PPTX':
-        return const Color(0xFFD84315);
-      case 'TXT':
-        return const Color(0xFF546E7A);
-      case 'CSV':
-        return const Color(0xFF7B1FA2);
-      default:
-        return Colors.grey;
-    }
   }
 }
 

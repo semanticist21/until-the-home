@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_logger.dart';
+import '../utils/date_utils.dart' as date_utils;
 
 /// 주간 페이지 열람 수 관리
 class WeeklyPagesStore {
@@ -47,7 +48,7 @@ class WeeklyPagesStore {
     await load();
 
     final today = DateTime.now();
-    final thisWeekStart = _getMondayOfWeek(today);
+    final thisWeekStart = date_utils.DateUtils.getMondayOfWeek(today);
 
     if (_weekStartDate == null) {
       // 첫 실행
@@ -95,13 +96,5 @@ class WeeklyPagesStore {
       );
     }
     await prefs.setInt(_currentPagesKey, currentPages.value);
-  }
-
-  /// 해당 주의 월요일 구하기
-  DateTime _getMondayOfWeek(DateTime date) {
-    final weekday = date.weekday; // 1=Monday, 7=Sunday
-    final daysToMonday = weekday - 1;
-    final monday = date.subtract(Duration(days: daysToMonday));
-    return DateTime(monday.year, monday.month, monday.day); // 시간 제거
   }
 }

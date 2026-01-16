@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_logger.dart';
+import '../utils/date_utils.dart' as date_utils;
 
 /// 주간 사용량 한도 관리
 class WeeklyLimitStore {
@@ -56,7 +57,7 @@ class WeeklyLimitStore {
     await load();
 
     final today = DateTime.now();
-    final thisWeekStart = _getMondayOfWeek(today);
+    final thisWeekStart = date_utils.DateUtils.getMondayOfWeek(today);
 
     if (_weekStartDate == null) {
       // 첫 실행
@@ -122,13 +123,5 @@ class WeeklyLimitStore {
     }
     await prefs.setInt(_currentUsageKey, currentUsage.value);
     await prefs.setInt(_weeklyLimitKey, weeklyLimit.value);
-  }
-
-  /// 해당 주의 월요일 구하기
-  DateTime _getMondayOfWeek(DateTime date) {
-    final weekday = date.weekday; // 1=Monday, 7=Sunday
-    final daysToMonday = weekday - 1;
-    final monday = date.subtract(Duration(days: daysToMonday));
-    return DateTime(monday.year, monday.month, monday.day); // 시간 제거
   }
 }
