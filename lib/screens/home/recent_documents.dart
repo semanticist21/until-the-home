@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../core/data/recent_documents_store.dart';
-import 'recent-documents-handler-csv.dart';
-import 'recent-documents-handler-doc.dart';
-import 'recent-documents-handler-docx.dart';
-import 'recent-documents-handler-hwp.dart';
-import 'recent-documents-handler-hwpx.dart';
-import 'recent-documents-handler-pdf.dart';
-import 'recent-documents-handler-txt.dart';
-import 'recent-documents-handler-xls.dart';
-import 'recent-documents-handler-xlsx.dart';
+import 'recent_documents_handler_csv.dart';
+import 'recent_documents_handler_doc.dart';
+import 'recent_documents_handler_docx.dart';
+import 'recent_documents_handler_hwp.dart';
+import 'recent_documents_handler_hwpx.dart';
+import 'recent_documents_handler_pdf.dart';
+import 'recent_documents_handler_txt.dart';
+import 'recent_documents_handler_xls.dart';
+import 'recent_documents_handler_xlsx.dart';
 
 class RecentDocuments extends StatefulWidget {
   const RecentDocuments({super.key});

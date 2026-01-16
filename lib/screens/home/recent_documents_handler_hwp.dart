@@ -57,7 +57,7 @@ class _HwpPdfViewerScreen extends StatefulWidget {
 
 class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
   static const _gotenbergUrl =
-      'https://kkomjang.synology.me:4000/forms/libreoffice/convert';
+      'https://kkomjang.synology.me:4000/convert';
 
   bool _isConverting = true;
   String? _errorMessage;
@@ -138,7 +138,7 @@ class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
       request.add(utf8.encode('--$boundary\r\n'));
       request.add(
         utf8.encode(
-          'Content-Disposition: form-data; name="files"; '
+          'Content-Disposition: form-data; name="file"; '
           'filename="$fileName"\r\n',
         ),
       );

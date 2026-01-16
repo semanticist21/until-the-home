@@ -119,21 +119,71 @@ Color palette (warm brown/golden tones):
 - **Android**: `android/app/build.gradle.kts`
 - **iOS**: `ios/Runner.xcodeproj/project.pbxproj`
 
-## Document Conversion API (Synology NAS) - 제한적 사용
+## HWP 변환 API (Synology NAS)
 
-문서 변환 서버가 Synology NAS에서 Gotenberg Docker로 실행 중.
+Synology NAS에서 커스텀 HWP 변환 서버 운영 중.
 
-- **Base URL**: `https://kkomjang.synology.me:4000`
-- **엔드포인트**: `/forms/libreoffice/convert`
+### 엔드포인트
 
-### ⚠️ 한계점
+- **외부 URL**: `https://kkomjang.synology.me:4000/convert`
+- **내부 URL**: `http://192.168.0.171:3131/convert`
+- **메서드**: `POST` (multipart/form-data, field: `file`)
 
-- **NAS 기반**: 개인 NAS에서 구동되어 프로덕션 앱에서 사용 불가
-- **실제 활용**: HWP → PDF 변환만 현실적으로 사용 가능
-- **PPTX, XLSX 등**: 변환 가능하나 앱에서 활용하기엔 불안정
+### 변환 파이프라인
 
-### 결론
+```
+HWP → ODT (pyhwp/hwp5odt) → PDF (LibreOffice headless)
+```
 
-- PPTX, XLSX 등은 Flutter에서 네이티브 뷰어 라이브러리 없음
-- Gotenberg 의존 불가능 → 해당 포맷은 현재 뷰어 지원 어려움
-- HWP만 Gotenberg로 PDF 변환 후 표시하는 방식 고려 가능
+- **pyhwp**: Python 라이브러리, `hwp5odt` 명령어로 HWP → ODT 변환
+- **LibreOffice**: ODT → PDF 변환 (headless 모드)
+- Gotenberg 기본 LibreOffice는 HWP 미지원 → 커스텀 Flask API 구현
+
+### Docker 구성
+
+- **컨테이너**: `gotenberg-hwp-gotenberg-1`
+- **이미지**: `gotenberg-hwp-gotenberg:latest` (Gotenberg + pyhwp + Flask)
+- **포트**: 3131 (Flask API), 3000 (Gotenberg 원본)
+- **위치**: `/volume1/docker/gotenberg-hwp/`
+
+### ⚠️ 시행착오 및 해결책 (2026.01.16)
+
+| 문제 | 원인 | 해결책 |
+|------|------|--------|
+| LibreOffice 120초 타임아웃 | 동시 요청 시 사용자 프로필 락 충돌 | 요청마다 고유 프로필 디렉토리 생성 |
+| gunicorn 로그 미출력 | supervisord stdout 설정 누락 | `stdout_logfile=/dev/fd/1` 추가 |
+| HOME 환경변수 미설정 | Flask에서 subprocess 호출 시 HOME 없음 | `env["HOME"] = work_dir` 설정 |
+
+### 핵심 코드 (hwp_converter.py)
+
+```python
+# 각 요청마다 고유 LibreOffice 프로필 생성 (락 충돌 방지)
+lo_profile = os.path.join(work_dir, "lo_profile")
+os.makedirs(lo_profile, exist_ok=True)
+
+env = os.environ.copy()
+env["HOME"] = work_dir  # HOME 환경변수 필수
+
+subprocess.run([
+    "libreoffice", "--headless",
+    "--nofirststartwizard", "--norestore",
+    f"-env:UserInstallation=file://{lo_profile}",  # 고유 프로필 경로
+    "--convert-to", "pdf",
+    "--outdir", work_dir,
+    odt_path
+], env=env, timeout=180)
+```
+
+### NAS SSH 접속
+
+```bash
+ssh semanticist@192.168.0.171
+# password: wldnjsqkr14!
+# docker 명령어는 sudo 필요
+```
+
+### 한계점
+
+- **NAS 기반**: 개인 NAS에서 구동 → 프로덕션 앱에서 안정성 보장 어려움
+- **네트워크 의존**: 외부 네트워크 상태에 따라 504 Gateway Timeout 발생 가능
+- **HWP 전용**: PPTX, XLSX 등은 Flutter 네이티브 뷰어 라이브러리 없음
