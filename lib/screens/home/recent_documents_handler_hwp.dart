@@ -33,6 +33,10 @@ bool openRecentDocumentHwpLike(BuildContext context, RecentDocument doc) {
 }
 
 bool _isAssetPath(String path) {
+  // test_samples/ 경로는 asset으로 처리
+  if (path.startsWith('test_samples/')) {
+    return true;
+  }
   try {
     return !File(path).existsSync();
   } catch (_) {
@@ -175,6 +179,7 @@ class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
   @override
   Widget build(BuildContext context) {
     if (_convertedPath != null) {
+      debugPrint('[HWP_VIEWER] Navigating to PDF viewer with converted file');
       return PdfViewerScreen(
         assetPath: _convertedPath!,
         title: widget.title,
@@ -182,6 +187,7 @@ class _HwpPdfViewerScreenState extends State<_HwpPdfViewerScreen> {
       );
     }
 
+    debugPrint('[HWP_VIEWER] Showing conversion screen: _isConverting=$_isConverting, _errorMessage=$_errorMessage');
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(

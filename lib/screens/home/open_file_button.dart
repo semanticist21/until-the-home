@@ -47,6 +47,7 @@ class OpenFileButton extends StatelessWidget {
                 'docx',
                 'xls',
                 'xlsx',
+                'pptx',
                 'csv',
                 'txt',
               ],
@@ -105,30 +106,33 @@ class OpenFileButton extends StatelessWidget {
                   height: 20,
                 ),
                 const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '파일 열기',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
-                        height: 1,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '파일 열기',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                          height: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'PDF · HWP · Word · Excel · CSV · TXT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade400,
-                        height: 1,
+                      const SizedBox(height: 4),
+                      Text(
+                        'PDF · HWP · HWPX · DOC · DOCX · XLS · XLSX · PPTX · CSV · TXT',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade400,
+                          height: 1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
                 Icon(
                   Icons.chevron_right,
                   color: Colors.grey.shade400,

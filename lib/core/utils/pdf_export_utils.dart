@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -16,6 +16,12 @@ class PdfExportUtils {
     required String title,
   }) async {
     final pdf = pw.Document();
+
+    // 한글 폰트 로드 (Korean + Latin)
+    final fontData = await rootBundle.load(
+      'assets/fonts/NotoSansKR-Regular.ttf',
+    );
+    final font = pw.Font.ttf(fontData);
 
     // 테이블 데이터 준비
     final tableData = <List<String>>[];
@@ -41,6 +47,7 @@ class PdfExportUtils {
               child: pw.Text(
                 title,
                 style: pw.TextStyle(
+                  font: font,
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
                 ),
@@ -51,9 +58,11 @@ class PdfExportUtils {
               context: context,
               data: tableData,
               headerStyle: pw.TextStyle(
+                font: font,
                 fontWeight: pw.FontWeight.bold,
                 color: PdfColors.white,
               ),
+              cellStyle: pw.TextStyle(font: font, fontSize: 10),
               headerDecoration: const pw.BoxDecoration(
                 color: PdfColors.grey700,
               ),

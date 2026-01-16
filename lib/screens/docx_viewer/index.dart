@@ -154,12 +154,20 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
                   ),
                 ),
                 onLoaded: () {
-                  debugPrint('DOCX loaded successfully');
-                  setState(() {
-                    _isDocxParsing = false;
+                  debugPrint('[DOCX_VIEWER] onLoaded called - removing overlay');
+                  debugPrint('[DOCX_VIEWER] Current state: _isDocxParsing=$_isDocxParsing, _error=$_error');
+                  // Add slight delay to ensure DocxView is fully rendered before removing overlay
+                  Future.delayed(const Duration(milliseconds: 50), () {
+                    if (mounted) {
+                      setState(() {
+                        _isDocxParsing = false;
+                      });
+                      debugPrint('[DOCX_VIEWER] Overlay removed, DocxView now visible');
+                    }
                   });
                 },
                 onError: (error) {
+                  debugPrint('[DOCX_VIEWER] onError called: $error');
                   setState(() {
                     _error = error.toString();
                   });
@@ -169,7 +177,12 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
             _buildBottomBar(),
           ],
         ),
-        if (_isDocxParsing) const AppLoadingOverlay(),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: _isDocxParsing
+              ? const AppLoadingOverlay()
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }

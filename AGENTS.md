@@ -18,7 +18,7 @@ flutter run              # Run app
 dart format lib/         # Format code
 dart analyze             # Analyze code
 flutter test             # Run tests
-flutter test test/widget_test.dart  # Run single test
+flutter test test/viewers/pdf_viewer_test.dart  # Run specific test
 
 # Production Build
 # 1. Remove PDFium WASM modules (4MB reduction, Web-only)
@@ -31,6 +31,23 @@ flutter build ios --release   # iOS
 # 3. Restore WASM for development
 dart run pdfrx:remove_wasm_modules --revert
 ```
+
+## Logging
+
+Use `appLogger` from `lib/core/utils/app_logger.dart` for all logging:
+
+```dart
+import '../../core/utils/app_logger.dart';
+
+appLogger.d('[COMPONENT] Debug message');    // Debug
+appLogger.i('[COMPONENT] Info message');     // Info
+appLogger.w('[COMPONENT] Warning message');  // Warning
+appLogger.e('[COMPONENT] Error', error: e, stackTrace: st);  // Error
+```
+
+- **Auto-disabled in release**: Logs only appear in debug builds
+- **Never use print()**: Use appLogger instead
+- **Prefix convention**: `[COMPONENT]` for easy log filtering
 
 ## Architecture
 
@@ -56,6 +73,34 @@ lib/
 - 화면 전용 컴포넌트: `header.dart`, `body.dart` 등 (재사용 안 하는 것)
 - 재사용 컴포넌트만 `core/widgets/`에 배치
 - 재사용 안 하는 컴포넌트는 inline 처리
+
+### Document Handler Pattern
+
+파일 열기는 핸들러 체인 패턴 사용 (`lib/screens/home/`):
+
+```dart
+// open_file_button.dart
+final handlers = [
+  openRecentDocumentPdf,
+  openRecentDocumentTxt,
+  openRecentDocumentCsv,
+  // ... other handlers
+];
+
+for (final handler in handlers) {
+  if (handler(context, doc)) break;  // 처리 완료 시 중단
+}
+```
+
+각 핸들러 함수:
+- **시그니처**: `bool openRecentDocument[Type](BuildContext, RecentDocument)`
+- **반환값**: 처리 성공 시 `true`, 타입 불일치 시 `false`
+- **위치**: `lib/screens/home/recent_documents_handler_[type].dart`
+
+지원 핸들러:
+- PDF, TXT, CSV, DOCX (네이티브 뷰어)
+- HWP, HWPX, PPTX (변환 후 뷰어)
+- DOC, XLS, XLSX (뷰어 미지원, 변환만 제공)
 
 ### 지원 파일 포맷
 
@@ -84,30 +129,95 @@ Color palette (warm brown/golden tones):
 
 ### 공통 위젯
 
-| Component         | 용도                          |
-|-------------------|-------------------------------|
-| `AppSectionTitle` | 섹션 제목                     |
-| `AppProgress`     | 프로그레스 인디케이터         |
-| `AppAdBanner`     | Google AdMob 배너             |
+| Component          | 용도                                     |
+|--------------------|------------------------------------------|
+| `AppSectionTitle`  | 섹션 제목                                |
+| `AppProgress`      | 프로그레스 인디케이터                    |
+| `AppAdBanner`      | Google AdMob 배너                        |
+| `AppLoading`       | 전체 화면 로딩 (AppProgress 래퍼)       |
+| `SearchBottomBar`  | 검색 기능이 있는 하단 바 (재사용 가능)  |
+
+#### SearchBottomBar 사용법
+
+```dart
+SearchBottomBar(
+  showSearchInput: _showSearchInput,
+  searchController: _searchController,
+  searchFocusNode: _searchFocusNode,
+  matchCount: _matchCount,
+  currentMatchIndex: _currentMatchIndex,
+  onSearchToggle: () { /* 검색 입력 표시/숨김 */ },
+  onSearchClose: () { /* 검색 닫기 */ },
+  onSearchChanged: (query) { /* 검색 쿼리 변경 */ },
+  onPreviousMatch: () { /* 이전 매치 */ },
+  onNextMatch: () { /* 다음 매치 */ },
+  infoWidget: Row(  // 선택적: 커스텀 정보 위젯
+    children: [/* 페이지 네비게이션 등 */],
+  ),
+)
+```
 
 ## Key Dependencies
 
 - **forui**: UI 컴포넌트 프레임워크
-- **pdfrx**: PDF 뷰어
+- **pdfrx**: PDF 뷰어 (v2.2.24, PdfTextSearcher 지연 초기화 필요)
 - **pdf**: PDF 생성 (CSV/TXT → PDF 변환)
 - **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링)
 - **csv**: CSV 파싱
+- **data_table_2**: 고급 DataTable (CSV 뷰어)
 - **file_picker**: 파일 선택
-- **google_mobile_ads**: 광고
+- **google_mobile_ads**: 광고 (iOS/Android만 지원)
 - **shared_preferences**: 로컬 저장소 (최근 문서 기록)
+- **logger**: Debug-only 로깅 (appLogger)
 
 ## Document Viewers
 
+### Common PDF Viewer (`lib/core/widgets/common_pdf_viewer.dart`)
+
+**공통 PDF 뷰어 컴포넌트** - PDF, TXT, CSV 뷰어가 모두 사용하는 통합 뷰어
+
+- **패키지**: pdfrx v2.2.24
+- **입력 타입**: 3가지 지원
+  - `pdfBytes`: Uint8List (TXT/CSV 변환 후 사용)
+  - `assetPath`: Asset 파일 경로
+  - `filePath`: 실제 파일 경로
+- **기능**: 핀치 줌, 페이지 네비게이션, 텍스트 검색
+- **UI**: SearchBottomBar (검색 + 페이지 네비게이션)
+- **콜백**: `onSave` (선택적, PDF 저장 버튼 표시)
+
+#### 검색 기능 (Search)
+
+- **Lazy Initialization**: PdfTextSearcher를 첫 검색 시에만 생성
+  ```dart
+  // ❌ Wrong: 초기화 시 생성 (pdfrx v2.2.13+ 버그)
+  _textSearcher = PdfTextSearcher(_controller!);
+
+  // ✅ Right: 첫 검색 시 생성
+  if (_textSearcher == null && _controller != null) {
+    _textSearcher = PdfTextSearcher(_controller!)
+      ..addListener(_updateSearchResults);
+  }
+  ```
+
+- **Transparent Highlights**: 하이라이트된 텍스트가 가려지지 않도록 투명도 사용
+  ```dart
+  matchTextColor: Colors.yellow.withValues(alpha: 0.3),        // 일반 매치
+  activeMatchTextColor: Colors.orange.withValues(alpha: 0.5),  // 활성 매치
+  ```
+
+- **Paint Callbacks**: 검색 결과 하이라이트 렌더링
+  ```dart
+  pagePaintCallbacks: [
+    if (_textSearcher != null)
+      _textSearcher!.pageTextMatchPaintCallback,
+  ],
+  ```
+
 ### PDF Viewer (`lib/screens/pdf_viewer/`)
 
-- **패키지**: pdfrx (PdfViewPinch)
-- **기능**: 핀치 줌, 페이지 네비게이션
-- **UI**: 하단바에 페이지 표시 (< 1/14 >)
+- **구조**: PDF 파일 로드 → CommonPdfViewer 사용
+- **입력**: Asset 또는 파일 경로
+- **UI**: SearchBottomBar (검색 + 페이지 네비게이션)
 
 ### DOCX Viewer (`lib/screens/docx_viewer/`)
 
@@ -119,17 +229,21 @@ Color palette (warm brown/golden tones):
 
 ### CSV Viewer (`lib/screens/csv_viewer/`)
 
-- **패키지**: csv (CsvToListConverter)
-- **기능**: 테이블 형태 표시, 검색, 행 필터링, PDF 내보내기
-- **UI**: DataTable, 하단바에 행×열 정보 + 검색 버튼
-- **PDF 내보내기**: AppBar 우측에 PDF 아이콘 버튼, 클릭 시 CSV → PDF 변환 후 뷰어로 열기
+- **구조**: CSV 파일 파싱 → PDF 변환 → CommonPdfViewer 사용
+- **패키지**: csv (파싱), pdf (생성)
+- **변환 설정**: A4 가로(landscape), 테이블 형식, 헤더 강조
+- **기능**: 검색, PDF 저장
+- **PDF 저장**: AppBar 우측에 PDF 아이콘 버튼
 
 ### TXT Viewer (`lib/screens/txt_viewer/`)
 
-- **패키지**: pdf (문서 생성), pdfrx (뷰어)
-- **기능**: TXT → PDF 자동 변환, 다국어 폰트 지원, 검색, PDF 저장
-- **UI**: PDF 뷰어 형태, 하단바에 페이지 네비게이션 + 검색 버튼
-- **PDF 저장**: AppBar 우측에 PDF 아이콘 버튼, 클릭 시 임시 파일로 저장 후 뷰어로 열기
+- **구조**: TXT 파일 읽기 → PDF 변환 → CommonPdfViewer 사용
+- **패키지**: pdf (생성)
+- **변환 설정**: A4 세로, 페이지당 약 50줄, 다국어 폰트 fallback 체인
+- **다국어 폰트**: Korean, Japanese, Chinese, Thai, Arabic, Hebrew, Hindi, Russian, Greek, Georgian, Armenian, Bengali, Tamil, Vietnamese, Math symbols
+- **⚠️ 폰트 한계**: Polish(ą,ć,ę,ł,ń,ś,ź,ż), Turkish(ş,ğ,İ) 미지원 (Noto Sans Latin Extended 추가 필요)
+- **기능**: 검색, PDF 저장
+- **PDF 저장**: AppBar 우측에 PDF 아이콘 버튼
 
 ## Platform Configuration
 
@@ -264,3 +378,60 @@ ssh semanticist@192.168.0.171
 - **NAS 기반**: 개인 NAS에서 구동 → 프로덕션 앱에서 안정성 보장 어려움
 - **네트워크 의존**: 외부 네트워크 상태에 따라 504 Gateway Timeout 발생 가능
 - **HWP 전용**: PPTX, XLSX 등은 Flutter 네이티브 뷰어 라이브러리 없음
+
+## Testing
+
+### Test Structure
+
+```text
+test/
+├── viewers/              # 뷰어별 테스트
+│   ├── pdf_viewer_test.dart
+│   ├── csv_viewer_test.dart
+│   └── txt_viewer_test.dart
+└── conversions/          # 변환 관련 테스트
+```
+
+### Test Patterns
+
+#### Widget Tests
+
+```dart
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Component Name Tests', () {
+    testWidgets('should show expected UI', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: YourWidget()),
+      );
+      await tester.pump();
+
+      expect(find.text('Expected Text'), findsOneWidget);
+    });
+  });
+}
+```
+
+#### Skipping Tests with Timers
+
+PDF 뷰어처럼 비동기 로딩이 지속적인 타이머를 생성하는 경우:
+
+```dart
+testWidgets('complex async test', (tester) async {
+  // ... test code
+}, skip: true);  // Skip: PDF loading creates persistent timers
+```
+
+### Running Tests
+
+```bash
+# 전체 테스트
+flutter test
+
+# 특정 파일
+flutter test test/viewers/pdf_viewer_test.dart
+
+# 특정 그룹
+flutter test --name "PDF Viewer Widget Tests"
+```

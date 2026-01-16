@@ -14,11 +14,13 @@ bool openRecentDocumentPdf(BuildContext context, RecentDocument doc) {
     return false;
   }
 
-  appLogger.i('[HANDLER_PDF] Opening PDF with isAsset: false');
+  // test_samples/ 경로는 asset으로 처리
+  final isAsset = doc.path.startsWith('test_samples/');
+  appLogger.i('[HANDLER_PDF] Opening PDF with isAsset: $isAsset');
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (_) =>
-          PdfViewerScreen(assetPath: doc.path, title: doc.name, isAsset: false),
+          PdfViewerScreen(assetPath: doc.path, title: doc.name, isAsset: isAsset),
     ),
   );
   return true;
