@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_ad_banner.dart';
 import 'body.dart';
 import 'header.dart';
+import 'settings_bottom_sheet.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,7 +16,7 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Header(onSettingsTap: () {}),
+            Header(onSettingsTap: () => SettingsBottomSheet.show(context)),
             const Expanded(child: Body()),
             const AppAdBanner(),
           ],

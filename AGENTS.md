@@ -106,6 +106,24 @@ bool openRecentDocument(BuildContext context, RecentDocument doc) {
 - HWP, HWPX, DOC, XLS, PPT, PPTX (NAS 변환 후 PDF 뷰어)
 - DOCX, XLSX (DOCX 뷰어, XML 포맷만 지원)
 
+#### 플랫폼별 네이티브 뷰어 지원 (2026.01.17)
+
+"외부 뷰어로 열기" 설정 시 플랫폼별 처리:
+
+```dart
+// iOS: iWork(Pages/Numbers/Keynote) 내장 → DOCX/XLSX/PPTX 지원
+// Android: Office 앱 설치 여부 불확실 → 항상 앱 내부 뷰어 사용
+// 레거시 포맷(HWP/HWPX/DOC/XLS/PPT)은 모든 플랫폼에서 제외
+final nativeViewerFormats = Platform.isIOS
+    ? ['DOCX', 'XLSX', 'PPTX']
+    : <String>[];
+```
+
+**동작 방식**:
+- **iOS + 외부 뷰어 ON**: DOCX/XLSX/PPTX → Pages/Numbers/Keynote, 나머지 → 앱 내부 뷰어
+- **Android + 외부 뷰어 ON**: 모든 포맷 → 앱 내부 뷰어 (Office 앱 설치 불확실)
+- **외부 뷰어 OFF**: 모든 플랫폼/포맷 → 앱 내부 뷰어
+
 ### 지원 파일 포맷
 
 - **네이티브 뷰어 지원**: PDF, TXT, CSV

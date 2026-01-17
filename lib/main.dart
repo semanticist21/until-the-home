@@ -8,6 +8,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import 'core/data/recent_documents_store.dart';
+import 'core/data/settings_store.dart';
 import 'core/data/usage_streak_store.dart';
 import 'core/data/weekly_limit_store.dart';
 import 'core/data/weekly_pages_store.dart';
@@ -22,12 +23,13 @@ void main() async {
   pdfrxFlutterInitialize(dismissPdfiumWasmWarnings: true);
   timeago.setLocaleMessages('ko', timeago.KoMessages());
 
-  // 연속 사용일 업데이트
-  await UsageStreakStore.instance.updateStreak();
-
-  // 주간 열람/페이지 리셋 체크
-  await WeeklyLimitStore.instance.checkWeeklyReset();
-  await WeeklyPagesStore.instance.checkWeeklyReset();
+  // 모든 Store 초기화를 병렬로 실행 (부팅 시간 단축)
+  await Future.wait([
+    SettingsStore.instance.init(),
+    UsageStreakStore.instance.updateStreak(),
+    WeeklyLimitStore.instance.checkWeeklyReset(),
+    WeeklyPagesStore.instance.checkWeeklyReset(),
+  ]);
 
   runApp(const MyApp());
 }
@@ -92,11 +94,11 @@ class _MyAppState extends State<MyApp> {
     );
 
     // 파일 열기 (약간의 딜레이로 UI가 준비될 때까지 대기)
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () async {
       final context = _navigatorKey.currentContext;
       if (context != null && mounted) {
         // ignore: use_build_context_synchronously
-        final success = openRecentDocument(context, doc);
+        final success = await openRecentDocument(context, doc);
         if (!success) {
           appLogger.w('[SHARING] Unsupported file type: $extension');
         }

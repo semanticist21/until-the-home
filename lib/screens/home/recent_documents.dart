@@ -133,8 +133,8 @@ class _RecentDocumentsState extends State<RecentDocuments> {
     );
   }
 
-  void _onDocumentTap(BuildContext context, RecentDocument doc) {
-    openRecentDocument(context, doc);
+  Future<void> _onDocumentTap(BuildContext context, RecentDocument doc) async {
+    await openRecentDocument(context, doc);
   }
 }
 
