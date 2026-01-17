@@ -83,8 +83,8 @@ app.*.map.json
 *.mocks.dart
 
 # Maven/Java build outputs
-test_samples/hwpx-converter/target/
+tools/hwpx-converter/target/
 
 # Font files (large files, download separately)
-test_samples/hwpx-converter/src/main/resources/*.ttc
-test_samples/hwpx-converter/src/main/resources/*.ttf
+tools/hwpx-converter/src/main/resources/*.ttc
+tools/hwpx-converter/src/main/resources/*.ttf

@@ -715,7 +715,7 @@ flutter test --name "PDF Viewer Widget Tests"
 
 ### HWPX Converter (Java/Maven)
 
-**위치**: `test_samples/hwpx-converter/`
+**위치**: `tools/hwpx-converter/`
 
 HWPX 파일을 PDF로 변환하는 Java 애플리케이션. 현재는 사용하지 않음 (NAS에서 통합 변환 처리).
 
@@ -733,19 +733,19 @@ HWPX 파일을 PDF로 변환하는 Java 애플리케이션. 현재는 사용하�
    ```bash
    # macOS 시스템 폰트 복사
    cp /System/Library/Fonts/Supplemental/AppleSDGothicNeo.ttc \
-      test_samples/hwpx-converter/src/main/resources/
+      tools/hwpx-converter/src/main/resources/
    ```
 
 2. **NotoSansKR.ttf**:
    - 다운로드: https://fonts.google.com/noto/specimen/Noto+Sans+KR
-   - 또는 `test_samples/hwpx-converter/src/main/resources/` 폴더에 직접 배치
+   - 또는 `tools/hwpx-converter/src/main/resources/` 폴더에 직접 배치
 
 **⚠️ 주의**: 폰트 파일은 `.gitignore`에 등록되어 있으므로 git에 커밋되지 않습니다. 각 개발 환경에서 개별적으로 다운로드 필요.
 
 #### 빌드 방법
 
 ```bash
-cd test_samples/hwpx-converter
+cd tools/hwpx-converter
 mvn clean package
 
 # JAR 파일 생성: target/hwpx-converter-1.0.0.jar
