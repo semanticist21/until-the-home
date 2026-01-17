@@ -7,17 +7,26 @@ import 'package:path/path.dart' as p;
 
 import 'document_converter.dart';
 
-/// NAS API를 통해 HWP/HWPX/PPTX를 PDF로 변환하는 컨버터
+/// NAS API를 통해 HWP/HWPX/Office 문서를 PDF로 변환하는 컨버터
 class NasToPdfConverter implements DocumentConverter {
   /// 지원하는 파일 타입
-  static const supportedTypes = ['hwp', 'hwpx', 'pptx'];
+  static const supportedTypes = [
+    'hwp',
+    'hwpx',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+  ];
 
   /// HWP/HWPX 변환 엔드포인트 (Flask)
   static const _hwpUrl = 'https://kkomjang.synology.me:4000/convert';
 
-  /// PPTX 변환 엔드포인트 (Gotenberg)
-  static const _pptxUrl =
-      'https://kkomjang.synology.me:4001/forms/libreoffice/convert';
+  /// Office 문서 변환 엔드포인트 (Gotenberg) - 4000 포트로 통합
+  static const _officeUrl =
+      'https://kkomjang.synology.me:4000/forms/libreoffice/convert';
 
   @override
   String get converterType => 'nas';
@@ -33,10 +42,11 @@ class NasToPdfConverter implements DocumentConverter {
     // 2. 파일 확장자에 따라 적절한 엔드포인트 선택
     final ext = p.extension(filePath).toLowerCase().replaceFirst('.', '');
     final url = _getEndpointUrl(ext);
+    final fieldName = _getFieldName(ext);
 
     // 3. NAS API 호출
     final fileName = p.basename(filePath);
-    return _requestConversion(fileBytes, fileName, url);
+    return _requestConversion(fileBytes, fileName, url, fieldName);
   }
 
   String _getEndpointUrl(String extension) {
@@ -44,8 +54,30 @@ class NasToPdfConverter implements DocumentConverter {
       case 'hwp':
       case 'hwpx':
         return _hwpUrl;
+      case 'doc':
+      case 'docx':
+      case 'xls':
+      case 'xlsx':
+      case 'ppt':
       case 'pptx':
-        return _pptxUrl;
+        return _officeUrl;
+      default:
+        throw UnsupportedError('지원하지 않는 파일 형식입니다: $extension');
+    }
+  }
+
+  String _getFieldName(String extension) {
+    switch (extension) {
+      case 'hwp':
+      case 'hwpx':
+        return 'file'; // Flask API
+      case 'doc':
+      case 'docx':
+      case 'xls':
+      case 'xlsx':
+      case 'ppt':
+      case 'pptx':
+        return 'files'; // Gotenberg API
       default:
         throw UnsupportedError('지원하지 않는 파일 형식입니다: $extension');
     }
@@ -68,21 +100,27 @@ class NasToPdfConverter implements DocumentConverter {
     Uint8List fileBytes,
     String fileName,
     String url,
+    String fieldName,
   ) async {
     final boundary = 'kkomi-boundary-${DateTime.now().millisecondsSinceEpoch}';
     final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 15);
+    client.connectionTimeout = const Duration(seconds: 30);
     try {
       final request = await client.postUrl(Uri.parse(url));
       request.headers.set(
         HttpHeaders.contentTypeHeader,
         'multipart/form-data; boundary=$boundary',
       );
+      // Basic Authentication: kkomi:kkomi (base64 encoded)
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Basic a2tvbWk6a2tvbWk=',
+      );
 
       request.add(utf8.encode('--$boundary\r\n'));
       request.add(
         utf8.encode(
-          'Content-Disposition: form-data; name="file"; '
+          'Content-Disposition: form-data; name="$fieldName"; '
           'filename="$fileName"\r\n',
         ),
       );
@@ -93,11 +131,11 @@ class NasToPdfConverter implements DocumentConverter {
       request.add(utf8.encode('\r\n--$boundary--\r\n'));
 
       final response = await request.close().timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 30),
       );
       final responseBytes = await _readResponseBytes(
         response,
-      ).timeout(const Duration(seconds: 20));
+      ).timeout(const Duration(seconds: 30));
       if (response.statusCode != HttpStatus.ok) {
         throw Exception(
           '변환 실패 (${response.statusCode}): ${utf8.decode(responseBytes)}',

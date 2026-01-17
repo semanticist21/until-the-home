@@ -92,7 +92,7 @@ class _BodyCardState extends State<BodyCard> {
                                         height: 1,
                                       ),
                                     ),
-                                    const Spacer(),
+                                    const SizedBox(width: 8),
                                     Text(
                                       '$daysUntilReset일 후 초기화',
                                       style: TextStyle(
@@ -101,9 +101,9 @@ class _BodyCardState extends State<BodyCard> {
                                         height: 1,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const Spacer(),
                                     Text(
-                                      '${animatedValue.toInt()}',
+                                      '${animatedValue.toInt()} / ∞',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,

@@ -103,15 +103,69 @@ bool openRecentDocument(BuildContext context, RecentDocument doc) {
 
 지원 포맷:
 - PDF, TXT, CSV (네이티브 PDF 뷰어)
-- HWP, HWPX, PPTX (NAS 변환 후 PDF 뷰어)
-- DOCX, DOC, XLS, XLSX (DOCX 뷰어)
+- HWP, HWPX, DOC, XLS, PPT, PPTX (NAS 변환 후 PDF 뷰어)
+- DOCX, XLSX (DOCX 뷰어, XML 포맷만 지원)
 
 ### 지원 파일 포맷
 
-- **네이티브 뷰어 지원**: PDF, TXT, DOCX, CSV
-- **변환 후 뷰어 지원**: HWP, HWPX, PPTX (NAS API → PDF 변환)
-- **뷰어 미지원**: DOC, XLS, XLSX, PPT
-- **파일 선택 지원**: PDF, HWP, HWPX, DOC, DOCX, XLS, XLSX, PPTX, CSV, TXT
+- **네이티브 뷰어 지원**: PDF, TXT, CSV
+- **DOCX 뷰어 지원**: DOCX, XLSX (XML 포맷만)
+- **변환 후 뷰어 지원**: HWP, HWPX, DOC, XLS, PPT, PPTX (NAS API → PDF 변환)
+- **파일 선택 지원**: PDF, HWP, HWPX, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT
+
+### 파일 크기 제한
+
+**Gotenberg 변환 포맷만 제한** (2026.01.17 추가):
+- **제한 포맷**: HWP, HWPX, DOC, XLS, PPT, PPTX
+- **제한 크기**: 25MB
+- **네이티브 뷰어**: 제한 없음 (PDF, TXT, CSV, DOCX, XLSX)
+- **변환 시간**: 25MB 기준 약 13-15초
+- **초과 시 동작**: 다이얼로그로 안내 후 파일 열기 취소
+
+## 파일 확장자 연결 (File Association)
+
+**패키지**: `receive_sharing_intent: ^1.8.1`
+
+사용자가 다른 앱(파일 탐색기, 이메일 등)에서 문서를 열 때 Kkomi를 선택할 수 있는 기능.
+
+### Android 구현
+
+`AndroidManifest.xml`에 intent-filter 설정:
+- **ACTION_VIEW**: 파일을 직접 열기 (파일 탐색기)
+- **ACTION_SEND**: 다른 앱에서 공유하기
+
+지원 MIME Types:
+- `application/pdf`, `application/vnd.hancom.hwp`, `application/vnd.hancom.hwpx`
+- `application/vnd.openxmlformats-officedocument.*` (DOCX, XLSX, PPTX)
+- `text/plain`, `text/csv`
+
+### Flutter 처리 로직 (`main.dart`)
+
+```dart
+// 1. 앱 실행 중 공유 받기
+ReceiveSharingIntent.instance.getMediaStream().listen((files) {
+  _handleSharedFile(files.first);
+});
+
+// 2. 앱 닫힌 상태에서 실행 시 공유 받기
+ReceiveSharingIntent.instance.getInitialMedia().then((files) {
+  _handleSharedFile(files.first);
+  ReceiveSharingIntent.instance.reset();
+});
+
+// 3. 파일 처리
+void _handleSharedFile(SharedMediaFile file) {
+  // - RecentDocumentsStore에 추가
+  // - openRecentDocument()로 뷰어 열기
+}
+```
+
+### iOS (향후 구현 필요)
+
+Share Extension 생성 필요:
+- `Info.plist` 설정 (CFBundleDocumentTypes, UTI)
+- Share Extension Swift 코드
+- App Group 설정
 
 ## Design System
 
@@ -318,39 +372,169 @@ Synology NAS에서 커스텀 HWP 변환 서버 운영 중.
 
 ### 엔드포인트
 
+**통합 Docker 컨테이너** (2026.01.17 업데이트):
+
 | 포트 | 서비스 | 용도 | URL |
 |------|--------|------|-----|
-| **4000** | Flask (HWP 변환) | HWP → PDF | `https://kkomjang.synology.me:4000/convert` |
-| **4001** | Gotenberg (Office 변환) | PPTX/DOCX/XLSX → PDF | `https://kkomjang.synology.me:4001/forms/libreoffice/convert` |
-| **3131** | Flask (내부) | HWP 변환 (내부) | `http://192.168.0.171:3131/convert` |
-| **3000** | Gotenberg (내부) | Office 변환 (내부) | `http://192.168.0.171:3000/forms/libreoffice/convert` |
+| **4000** | nginx + Gotenberg + Flask | HWP/Office → PDF | `https://kkomjang.synology.me:4000` |
+
+**내부 구조**:
+```
+외부 HTTPS → Synology nginx (4000)
+           ↓ (SSL 종료)
+           localhost:4001 (HTTP)
+           ↓
+           Docker 컨테이너 (gotenberg-hwp-all)
+           ├── nginx (4000) - Basic Auth, 리버스 프록시
+           ├── Gotenberg (3000) - Office 문서 변환
+           └── Flask (3131) - HWP 변환
+```
+
+**엔드포인트**:
+- **HWP 변환**: `https://kkomjang.synology.me:4000/convert`
+- **Office 변환**: `https://kkomjang.synology.me:4000/forms/libreoffice/convert`
 
 - **메서드**: `POST` (multipart/form-data)
-- **필드명**: `file` (Flask), `files` (Gotenberg)
+- **필드명**: `file` (Flask/HWP), `files` (Gotenberg/Office)
+- **지원 포맷**: HWP/HWPX (Flask), DOC/DOCX/XLS/XLSX/PPT/PPTX (Gotenberg)
+- **인증**: Basic Authentication (Username: `kkomi`, Password: `kkomi`)
+  - 2026.01.17 추가: nginx에서 `auth_basic` 설정
+  - Flutter 앱: `Authorization: Basic a2tvbWk6a2tvbWk=` 헤더 자동 포함
+  - curl 예시: `curl -u kkomi:kkomi -X POST -F "file=@doc.hwp" https://kkomjang.synology.me:4000/convert`
 
 ### 변환 파이프라인
 
 **HWP 변환 (2단계)**:
 ```
-HWP → ODT (pyhwp/hwp5odt) → PDF (LibreOffice headless)
+HWP/HWPX → ODT (pyhwp/hwp5odt) → PDF (LibreOffice headless)
 ```
 - **pyhwp**: Python 라이브러리, `hwp5odt` 명령어로 HWP → ODT 변환
 - **LibreOffice**: ODT → PDF 변환 (headless 모드)
 - Gotenberg 기본 LibreOffice는 HWP 미지원 → 커스텀 Flask API 구현
 
-**PPTX/Office 변환 (1단계)**:
+**Office 변환 (1단계)**:
 ```
-PPTX/DOCX/XLSX → PDF (LibreOffice headless, Gotenberg)
+DOC/DOCX/XLS/XLSX/PPT/PPTX → PDF (LibreOffice headless, Gotenberg)
 ```
-- **Gotenberg**: LibreOffice가 Office 포맷을 네이티브 지원
+- **Gotenberg**: LibreOffice가 Office 포맷(구형/신형 모두)을 네이티브 지원
 - **변환 속도**: HWP보다 2배 이상 빠름 (중간 단계 없음)
+- **레거시 포맷**: DOC, XLS, PPT (바이너리 포맷)도 변환 가능
 
 ### Docker 구성
 
-- **컨테이너**: `gotenberg-hwp-gotenberg-1`
-- **이미지**: `gotenberg-hwp-gotenberg:latest` (Gotenberg + pyhwp + Flask)
-- **포트**: 3131 (Flask API), 3000 (Gotenberg 원본)
-- **위치**: `/volume1/docker/gotenberg-hwp/`
+- **컨테이너**: `gotenberg-hwp-all`
+- **이미지**: `gotenberg-hwp-all:latest`
+- **포트 매핑**: `4001:4000` (호스트:컨테이너)
+- **위치**: `/volume1/docker/gotenberg-hwp-nginx/`
+- **서비스 관리**: supervisord (nginx, Gotenberg, Flask)
+
+### 배포 방법
+
+**파일 전송** (base64 방식 - SSH 권한 문제 우회):
+
+```bash
+# 파일을 base64로 인코딩하여 SSH로 전송
+ENCODED=$(base64 -i /tmp/gotenberg-hwp-nginx/FILE | tr -d '\n')
+
+expect << EOF
+spawn ssh semanticist@192.168.0.171
+expect "password:"
+send "wldnjsqkr14!\r"
+expect "$ "
+send "echo '$ENCODED' | base64 -d > /volume1/docker/gotenberg-hwp-nginx/FILE\r"
+expect "$ "
+send "exit\r"
+expect eof
+EOF
+```
+
+**컨테이너 재빌드**:
+
+```bash
+# NAS SSH 접속
+ssh semanticist@192.168.0.171
+
+# 빌드 및 재시작
+cd /volume1/docker/gotenberg-hwp-nginx
+sudo docker build -t gotenberg-hwp-all .
+sudo docker stop gotenberg-hwp-all
+sudo docker rm gotenberg-hwp-all
+sudo docker run -d --name gotenberg-hwp-all -p 4001:4000 --restart unless-stopped gotenberg-hwp-all
+
+# 상태 확인
+sudo docker ps | grep gotenberg
+# 출력: Up X minutes (정상), Restarting (문제 있음)
+```
+
+### LibreOffice Writer 타임아웃 해결 (2026.01.17)
+
+**문제**: DOC 파일 변환 시 LibreOffice Writer 초기화에 20초+ 소요 → 기본 타임아웃 20초 초과
+
+**원인**: LibreOffice 컴포넌트별 초기화 시간 차이
+- Writer (DOC/DOCX): 20+ 초
+- Calc (XLS/XLSX): 2-3 초
+- Impress (PPT/PPTX): 2-3 초
+
+**해결**: `services.conf`에서 Gotenberg 시작 옵션 변경
+
+```ini
+[program:gotenberg]
+command=/usr/bin/tini -- gotenberg \
+  --api-timeout=300s \
+  --libreoffice-start-timeout=60s  # 20초 → 60초
+```
+
+**테스트 결과**:
+
+| 포맷 | 원본 크기 | 변환 시간 | PDF 크기 | 상태 |
+|------|-----------|-----------|----------|------|
+| HWP | 40KB | 6.5초 | 60KB | ✅ |
+| DOC | 25KB | 2.8초 | 42KB | ✅ 수정 후 성공 |
+| XLS | 16KB | 2.2초 | 72KB | ✅ |
+| XLSX | 29KB | 0.67초 | 35KB | ✅ |
+| PPT | 891KB | 1.5초 | 286KB | ✅ |
+| PPTX | 46MB | 21-28초 | 14MB | ✅ |
+
+### 컨테이너 관리
+
+**상태 확인**:
+
+```bash
+sudo docker ps | grep gotenberg
+# 출력 예시:
+# - Up X minutes: 정상 작동
+# - Restarting: 문제 발생 (로그 확인 필요)
+```
+
+**로그 확인**:
+
+```bash
+# 전체 로그
+sudo docker logs gotenberg-hwp-all
+
+# 실시간 로그
+sudo docker logs -f gotenberg-hwp-all
+
+# 특정 서비스 로그
+sudo docker logs gotenberg-hwp-all | grep gunicorn
+sudo docker logs gotenberg-hwp-all | grep gotenberg
+```
+
+**변환 테스트**:
+
+```bash
+# HWP 변환
+curl -u kkomi:kkomi -X POST \
+  -F "file=@sample.hwp" \
+  https://kkomjang.synology.me:4000/convert \
+  -o output.pdf
+
+# Office 변환 (타임아웃 65초)
+curl -u kkomi:kkomi -X POST \
+  -F "files=@large.pptx" \
+  https://kkomjang.synology.me:4000/forms/libreoffice/convert \
+  -o output.pdf --max-time 65
+```
 
 ### ⚠️ 시행착오 및 해결책 (2026.01.16)
 
@@ -386,7 +570,7 @@ subprocess.run([
 
 ```ini
 [program:hwpconverter]
-command=gunicorn -b 0.0.0.0:5000 -w 4 --timeout 300 --log-level debug hwp_converter:app
+command=gunicorn -b 0.0.0.0:3131 -w 4 --timeout 300 --log-level debug hwp_converter:app
 ```
 
 - **Worker 개수**: `-w 4` (동시 처리 가능 요청 수)
@@ -405,26 +589,50 @@ command=gunicorn -b 0.0.0.0:5000 -w 4 --timeout 300 --log-level debug hwp_conver
 
 ```bash
 # 1. 컨테이너에 파일 복사
-sudo docker cp /tmp/services.conf gotenberg-hwp-gotenberg-1:/etc/supervisor/conf.d/services.conf
+sudo docker cp /tmp/services.conf gotenberg-hwp-all:/etc/supervisor/conf.d/services.conf
 
 # 2. 컨테이너 재시작
-sudo docker restart gotenberg-hwp-gotenberg-1
+sudo docker restart gotenberg-hwp-all
 
 # 3. 설정 확인
-sudo docker exec gotenberg-hwp-gotenberg-1 ps aux | grep gunicorn
+sudo docker exec gotenberg-hwp-all ps aux | grep gunicorn
 # Master 1개 + Worker N개 = 총 N+1개 프로세스 확인
 ```
 
-**테스트 방법**:
+### Nginx 설정 (Basic Auth)
 
-```bash
-# 4개 동시 요청 테스트
-for i in {1..4}; do
-  curl -X POST -F "file=@sample.hwp" \
-    https://kkomjang.synology.me:4000/convert \
-    -o test_${i}.pdf &
-done
-wait
+**주요 파일**:
+- **nginx.conf**: `/etc/nginx/nginx.conf` (컨테이너 내부)
+- **htpasswd**: `/etc/nginx/.htpasswd` (kkomi:kkomi)
+
+**설정 예시**:
+
+```nginx
+http {
+    upstream gotenberg {
+        server localhost:3000;
+    }
+    upstream flask {
+        server localhost:3131;
+    }
+
+    server {
+        listen 4000;
+        auth_basic "Restricted Access";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        location /convert {
+            proxy_pass http://flask;
+        }
+        location /forms/libreoffice/convert {
+            proxy_pass http://gotenberg;
+        }
+        location /health {
+            auth_basic off;
+            return 200 "OK";
+        }
+    }
+}
 ```
 
 ### NAS SSH 접속
@@ -439,7 +647,12 @@ ssh semanticist@192.168.0.171
 
 - **NAS 기반**: 개인 NAS에서 구동 → 프로덕션 앱에서 안정성 보장 어려움
 - **네트워크 의존**: 외부 네트워크 상태에 따라 504 Gateway Timeout 발생 가능
-- **HWP 전용**: PPTX, XLSX 등은 Flutter 네이티브 뷰어 라이브러리 없음
+- **변환 의존**: HWP, Office 레거시 포맷(DOC/XLS/PPT)은 Flutter 네이티브 뷰어 없음 → NAS 변환 필수
+- **보안 한계** (Basic Authentication):
+  - 단일 계정 (`kkomi:kkomi`) → 사용자별 구분 불가
+  - 인증 정보를 아는 사람은 누구나 curl/Postman으로 호출 가능
+  - 우연한 접근/크롤러는 차단되지만, 의도적 접근은 가능
+  - 더 강화하려면: API 키 방식, IP 화이트리스트, Rate Limiting 고려
 
 ## Testing
 
@@ -496,4 +709,51 @@ flutter test test/viewers/pdf_viewer_test.dart
 
 # 특정 그룹
 flutter test --name "PDF Viewer Widget Tests"
+```
+
+## Test Samples
+
+### HWPX Converter (Java/Maven)
+
+**위치**: `test_samples/hwpx-converter/`
+
+HWPX 파일을 PDF로 변환하는 Java 애플리케이션. 현재는 사용하지 않음 (NAS에서 통합 변환 처리).
+
+#### 폰트 파일 설정
+
+**필수 폰트**:
+- `AppleSDGothicNeo.ttc` (52.81MB) - macOS 시스템 폰트
+- `NotoSansKR.ttf` - Google Noto Sans 한글 폰트
+
+**설치 위치**: `src/main/resources/`
+
+**다운로드 방법**:
+
+1. **AppleSDGothicNeo.ttc** (macOS 전용):
+   ```bash
+   # macOS 시스템 폰트 복사
+   cp /System/Library/Fonts/Supplemental/AppleSDGothicNeo.ttc \
+      test_samples/hwpx-converter/src/main/resources/
+   ```
+
+2. **NotoSansKR.ttf**:
+   - 다운로드: https://fonts.google.com/noto/specimen/Noto+Sans+KR
+   - 또는 `test_samples/hwpx-converter/src/main/resources/` 폴더에 직접 배치
+
+**⚠️ 주의**: 폰트 파일은 `.gitignore`에 등록되어 있으므로 git에 커밋되지 않습니다. 각 개발 환경에서 개별적으로 다운로드 필요.
+
+#### 빌드 방법
+
+```bash
+cd test_samples/hwpx-converter
+mvn clean package
+
+# JAR 파일 생성: target/hwpx-converter-1.0.0.jar
+```
+
+#### 로컬 테스트
+
+```bash
+./test_local.sh sample.hwpx
+# 출력: sample.pdf
 ```

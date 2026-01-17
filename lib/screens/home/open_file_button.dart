@@ -38,17 +38,47 @@ class OpenFileButton extends StatelessWidget {
                 'docx',
                 'xls',
                 'xlsx',
+                'ppt',
                 'pptx',
                 'csv',
                 'txt',
               ],
             );
             final path = result?.files.single.path;
-            appLogger.d('[OPEN_FILE_BUTTON] Selected path: $path');
+            final fileSize = result?.files.single.size ?? 0;
+            appLogger.d('[OPEN_FILE_BUTTON] Selected path: $path, size: $fileSize bytes');
             if (path == null || path.isEmpty) {
               appLogger.w('[OPEN_FILE_BUTTON] No file selected');
               return;
             }
+
+            // Check file size limit for Gotenberg conversion formats
+            final fileType = _getFileType(path);
+            final gotenbergFormats = ['HWP', 'HWPX', 'DOC', 'XLS', 'PPT', 'PPTX'];
+            const maxSize = 25 * 1024 * 1024; // 25MB
+
+            if (gotenbergFormats.contains(fileType) && fileSize > maxSize) {
+              final sizeMB = (fileSize / (1024 * 1024)).toStringAsFixed(1);
+              appLogger.w('[OPEN_FILE_BUTTON] File too large: $sizeMB MB');
+              if (!context.mounted) return;
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('파일 크기 제한'),
+                  content: Text(
+                    '변환 가능한 파일 크기는 25MB까지입니다.\n선택한 파일: $sizeMB MB',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('확인'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
             await RecentDocumentsStore.instance.addDocument(path);
             appLogger.i('[OPEN_FILE_BUTTON] Added to recent documents');
 
@@ -56,7 +86,7 @@ class OpenFileButton extends StatelessWidget {
             final doc = RecentDocument(
               path: path,
               name: path.split('/').last,
-              type: _getFileType(path),
+              type: fileType,
               openedAt: DateTime.now(),
             );
             appLogger.d(
@@ -98,7 +128,7 @@ class OpenFileButton extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'PDF · HWP · HWPX · DOC · DOCX · XLS · XLSX · PPTX · CSV · TXT',
+                        'PDF · HWP · Office · CSV · TXT',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade400,

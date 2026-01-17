@@ -62,17 +62,9 @@ bool openRecentDocument(BuildContext context, RecentDocument doc) {
 
     case 'HWP':
     case 'HWPX':
-      NavigationUtils.pushScreen(
-        context,
-        (_) => UniversalPdfViewer(
-          filePath: doc.path,
-          title: doc.name,
-          isAsset: isAsset,
-          converter: NasToPdfConverter(),
-        ),
-      );
-      return true;
-
+    case 'DOC':
+    case 'XLS':
+    case 'PPT':
     case 'PPTX':
       NavigationUtils.pushScreen(
         context,
@@ -86,8 +78,6 @@ bool openRecentDocument(BuildContext context, RecentDocument doc) {
       return true;
 
     case 'DOCX':
-    case 'DOC':
-    case 'XLS':
     case 'XLSX':
       NavigationUtils.pushScreen(
         context,
