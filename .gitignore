@@ -88,3 +88,16 @@ tools/hwpx-converter/target/
 # Font files (large files, download separately)
 tools/hwpx-converter/src/main/resources/*.ttc
 tools/hwpx-converter/src/main/resources/*.ttf
+
+# _store temporary files (keep screenshots and directories)
+_store/*.html
+_store/*.svg
+_store/*.svg.backup
+_store/phone_frame_extracted.png
+
+# hwpxlib (external library)
+tools/hwpx-converter/hwpxlib/
+
+# iOS build artifacts
+ios/build/
+ios/ExportOptions.plist
