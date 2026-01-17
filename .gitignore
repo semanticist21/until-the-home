@@ -101,3 +101,9 @@ tools/hwpx-converter/hwpxlib/
 # iOS build artifacts
 ios/build/
 ios/ExportOptions.plist
+
+# Unused platforms (iOS/Android only)
+web/
+linux/
+windows/
+macos/
