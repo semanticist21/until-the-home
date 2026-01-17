@@ -15,12 +15,12 @@ class _AppAdBannerState extends State<AppAdBanner> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
 
-  // Test ad unit IDs
+  // Production ad unit IDs
   static String get _adUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111';
+      return 'ca-app-pub-6737616702687889/1500674457';
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/2934735716';
+      return 'ca-app-pub-6737616702687889/1697961485';
     }
     throw UnsupportedError('Unsupported platform');
   }
