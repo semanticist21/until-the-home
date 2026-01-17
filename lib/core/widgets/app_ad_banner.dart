@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -24,15 +25,15 @@ class _AppAdBannerState extends State<AppAdBanner> {
     throw UnsupportedError('Unsupported platform');
   }
 
-  // Check if current platform supports ads
-  static bool get _isAdSupportedPlatform {
-    return Platform.isAndroid || Platform.isIOS;
+  // Check if ads should be shown (release mode + supported platform)
+  static bool get _shouldShowAds {
+    return !kDebugMode && (Platform.isAndroid || Platform.isIOS);
   }
 
   @override
   void initState() {
     super.initState();
-    if (_isAdSupportedPlatform) {
+    if (_shouldShowAds) {
       _loadAd();
     }
   }
@@ -64,8 +65,8 @@ class _AppAdBannerState extends State<AppAdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _bannerAd == null) {
-      return const SizedBox(height: 50);
+    if (!_shouldShowAds || !_isLoaded || _bannerAd == null) {
+      return const SizedBox.shrink();
     }
 
     return SizedBox(
