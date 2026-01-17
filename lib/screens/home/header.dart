@@ -23,7 +23,7 @@ class _HeaderState extends State<Header> {
       child: Row(
         children: [
           const Text(
-            'Home',
+            '홈',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 20,

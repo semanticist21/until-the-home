@@ -67,7 +67,7 @@ class SettingsBottomSheet extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Native Viewer 선호',
+                              '시스템 뷰어 선호',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
