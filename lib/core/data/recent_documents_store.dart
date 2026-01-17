@@ -86,6 +86,18 @@ class RecentDocumentsStore {
     await prefs.setString(_prefsKey, encoded);
   }
 
+  Future<void> removeDocument(String path) async {
+    await load();
+    final filtered = documents.value.where((doc) => doc.path != path).toList();
+    if (filtered.length == documents.value.length) {
+      return;
+    }
+    documents.value = filtered;
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(filtered.map((doc) => doc.toJson()).toList());
+    await prefs.setString(_prefsKey, encoded);
+  }
+
   Future<void> pruneMissingFiles() async {
     await load();
     final filtered = documents.value.where((doc) {

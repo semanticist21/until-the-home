@@ -76,7 +76,7 @@ class SettingsBottomSheet extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Office 문서를 시스템 앱으로 열기 (iOS/Android)',
+                              '가능한 경우 문서를 시스템 앱으로 열기',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,

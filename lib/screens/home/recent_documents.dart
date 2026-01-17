@@ -51,7 +51,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    '최근 문서',
+                    '최근 문서 (최대 10개)',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -120,6 +120,7 @@ class _RecentDocumentsState extends State<RecentDocuments> {
                           date: _formatDate(doc.openedAt),
                           type: doc.type,
                           onTap: () => _onDocumentTap(context, doc),
+                          onDelete: () => _onDocumentDelete(context, doc),
                         );
                       }),
                     ),
@@ -136,6 +137,13 @@ class _RecentDocumentsState extends State<RecentDocuments> {
   Future<void> _onDocumentTap(BuildContext context, RecentDocument doc) async {
     await openRecentDocument(context, doc);
   }
+
+  Future<void> _onDocumentDelete(
+    BuildContext context,
+    RecentDocument doc,
+  ) async {
+    await RecentDocumentsStore.instance.removeDocument(doc.path);
+  }
 }
 
 class _DocumentItem extends StatelessWidget {
@@ -144,12 +152,14 @@ class _DocumentItem extends StatelessWidget {
     required this.date,
     required this.type,
     this.onTap,
+    this.onDelete,
   });
 
   final String title;
   final String date;
   final String type;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +206,11 @@ class _DocumentItem extends StatelessWidget {
             Text(
               date,
               style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onDelete,
+              child: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
             ),
           ],
         ),
