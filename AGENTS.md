@@ -32,6 +32,59 @@ flutter build ios --release   # iOS
 dart run pdfrx:remove_wasm_modules --revert
 ```
 
+## Google Play Store Deployment
+
+### App Bundle Build
+
+```bash
+# 1. Remove WASM modules (production optimization)
+dart run pdfrx:remove_wasm_modules
+
+# 2. Build release AAB
+flutter build appbundle --release
+
+# 3. Output location
+# build/app/outputs/bundle/release/app-release.aab
+
+# 4. Restore WASM for development
+dart run pdfrx:remove_wasm_modules --revert
+```
+
+### Signing Configuration
+
+- **Keystore**: `android/upload-keystore.jks` (excluded from git)
+- **Credentials**: `android/key.properties` (excluded from git)
+- **Build Config**: `android/app/build.gradle.kts` (signingConfigs.release)
+
+### Version Management
+
+앱 버전 업데이트 시 `pubspec.yaml`의 `version` 필드 수정:
+
+```yaml
+version: 1.0.0+6  # 형식: major.minor.patch+buildNumber
+```
+
+- **Android**: `buildNumber` → `versionCode`
+- **iOS**: `major.minor.patch` → `CFBundleShortVersionString`, `buildNumber` → `CFBundleVersion`
+- **앱 스토어 심사 제출 시 버전 증가 필수**
+
+### Permission Policy Compliance
+
+앱은 photo/video 권한을 명시적으로 제거하여 Play Store 정책을 준수:
+
+```xml
+<!-- AndroidManifest.xml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+    <!-- Explicitly remove photo/video permissions - app only handles documents -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+```
+
+**배경**: `file_picker` 패키지가 Android 13+에서 자동으로 추가하는 photo/video 권한을 제거. Kkomi는 문서 파일만 처리하므로 불필요.
+
 ## Logging
 
 Use `appLogger` from `lib/core/utils/app_logger.dart` for all logging:
@@ -426,18 +479,6 @@ CommonPdfViewer(
 
 - **Android**: `android/app/build.gradle.kts`
 - **iOS**: `ios/Runner.xcodeproj/project.pbxproj`
-
-### Version Management
-
-앱 버전 업데이트 시 `pubspec.yaml`의 `version` 필드 수정:
-
-```yaml
-version: 1.0.0+1  # 형식: major.minor.patch+buildNumber
-```
-
-- **Android**: `buildNumber` → `versionCode`
-- **iOS**: `major.minor.patch` → `CFBundleShortVersionString`, `buildNumber` → `CFBundleVersion`
-- **앱 스토어 심사 제출 시 버전 증가 필수**
 
 ## HWP 변환 API (Synology NAS)
 
