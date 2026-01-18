@@ -1,0 +1,14 @@
+# Temporary generated files
+1.png
+2.png
+3.png
+preview_*_final.png
+template*.png
+ipad_*.png
+
+# Upload scripts (operational)
+upload_*.py
+
+# Temporary files
+*.tmp
+*.bak
