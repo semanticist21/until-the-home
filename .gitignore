@@ -92,6 +92,9 @@ tools/hwpx-converter/src/main/resources/*.ttf
 # _store temporary files (keep screenshots and directories)
 _store/*.html
 _store/phone_frame_extracted.png
+_store/preview_*.png
+_store/playstore_preview_*.png
+_store/*.png
 
 # hwpxlib (external library)
 tools/hwpx-converter/hwpxlib/
