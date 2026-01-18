@@ -91,8 +91,6 @@ tools/hwpx-converter/src/main/resources/*.ttf
 
 # _store temporary files (keep screenshots and directories)
 _store/*.html
-_store/*.svg
-_store/*.svg.backup
 _store/phone_frame_extracted.png
 
 # hwpxlib (external library)
@@ -107,3 +105,9 @@ web/
 linux/
 windows/
 macos/
+
+# Android keystore
+key.properties
+*.jks
+*.keystore
+play-store-feature-graphic.png
