@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1512" height="2688" viewBox="0 0 1512 2688" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- 배경 영역 -->
+  <rect id="background" x="0" y="0" width="1512" height="2688" fill="#FDDC64"/>
+
+  <!-- 클립 패스 정의 (둥근 모서리) -->
+  <defs>
+    <clipPath id="screen-clip">
+      <rect x="276" y="420" width="960" height="2020" rx="50" ry="50"/>
+    </clipPath>
+  </defs>
+
+  <!-- 배경 장식 요소 -->
+  <g id="decorations" opacity="0.1">
+    <!-- 좌상단 큰 원 -->
+    <circle cx="100" cy="100" r="180" fill="#B75634"/>
+
+    <!-- 우상단 원 -->
+    <circle cx="1420" cy="200" r="120" fill="#B75634"/>
+
+    <!-- 좌하단 원 -->
+    <circle cx="150" cy="2500" r="150" fill="#B75634"/>
+
+    <!-- 우하단 큰 원 -->
+    <circle cx="1370" cy="2600" r="200" fill="#B75634"/>
+
+    <!-- 작은 점들 -->
+    <circle cx="300" cy="2400" r="30" fill="#B75634"/>
+    <circle cx="1220" cy="300" r="40" fill="#B75634"/>
+    <circle cx="200" cy="1300" r="35" fill="#B75634"/>
+    <circle cx="1320" cy="1400" r="45" fill="#B75634"/>
+
+    <!-- 문서 모양 아이콘들 -->
+    <rect x="50" y="1800" width="80" height="100" rx="8" fill="#B75634"/>
+    <rect x="1370" y="900" width="70" height="90" rx="8" fill="#B75634"/>
+  </g>
+
+  <!-- 상단 제목 텍스트 영역 -->
+  <g id="title-area">
+    <text id="title-text" x="756" y="220"
+          font-family="Arial, sans-serif"
+          font-size="90"
+          font-weight="bold"
+          text-anchor="middle"
+          fill="#000000">
+      통합 문서 뷰어
+    </text>
+  </g>
+
+  <!-- 중앙 스크린샷 영역 (디바이스 프레임) -->
+  <g id="screenshot-area">
+    <!-- 폰 프레임 외곽선 -->
+    <rect id="phone-frame"
+          x="256" y="380"
+          width="1000" height="2100"
+          rx="70" ry="70"
+          fill="#1a1a1a"
+          stroke="#333333"
+          stroke-width="10"/>
+
+    <!-- 화면 영역 (실제 스크린샷 들어갈 곳) -->
+    <image id="screenshot"
+           x="276" y="420"
+           width="960" height="2020"
+           href="1.png"
+           preserveAspectRatio="xMidYMid slice"
+           clip-path="url(#screen-clip)"/>
+
+    <!-- 상단 노치 -->
+    <rect id="notch"
+          x="631" y="420"
+          width="250" height="50"
+          rx="25" ry="25"
+          fill="#1a1a1a"/>
+
+    <!-- 홈 인디케이터 -->
+    <rect id="home-indicator"
+          x="681" y="2355"
+          width="150" height="10"
+          rx="5" ry="5"
+          fill="#888888"/>
+  </g>
+</svg>
