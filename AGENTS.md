@@ -106,6 +106,58 @@ bool openRecentDocument(BuildContext context, RecentDocument doc) {
 - HWP, HWPX, DOC, XLS, PPT, PPTX (NAS 변환 후 PDF 뷰어)
 - DOCX, XLSX (DOCX 뷰어, XML 포맷만 지원)
 
+### UniversalPdfViewer - Unified Document Viewing
+
+**패턴**: `lib/screens/universal_pdf_viewer/index.dart`
+
+통합 PDF 뷰어로 모든 문서 타입을 처리하는 중앙 컴포넌트:
+
+```dart
+// 직접 PDF 로드
+UniversalPdfViewer(
+  filePath: '/path/to/file.pdf',
+  title: 'Document',
+  isAsset: false,
+)
+
+// 변환기를 사용한 로드 (TXT, CSV, HWP 등)
+UniversalPdfViewer(
+  filePath: '/path/to/file.txt',
+  title: 'Document',
+  converter: TxtToPdfConverter(),  // DocumentConverter 구현체
+)
+```
+
+**동작 방식**:
+1. `converter`가 null → 직접 PDF 로드 (`CommonPdfViewer` 사용)
+2. `converter` 제공 → 파일 변환 → 임시 저장 → PDF 뷰어 표시
+3. 변환 중 에러 → 상태코드별 사용자 친화적 메시지 표시 (400: 손상/암호, 413: 크기 초과, 500: 서버 오류)
+
+### DocumentConverter Pattern
+
+**추상 클래스**: `lib/core/converters/document_converter.dart`
+
+모든 문서 변환기는 `DocumentConverter` 인터페이스를 구현:
+
+```dart
+abstract class DocumentConverter {
+  Future<Uint8List> convertToPdf(String filePath, {bool isAsset = false});
+  String get converterType;
+}
+```
+
+**구현체**:
+- `TxtToPdfConverter`: TXT → PDF (다국어 폰트 지원)
+- `CsvToPdfConverter`: CSV → PDF (테이블 형식)
+- `NasToPdfConverter`: HWP/Office → PDF (NAS API 사용)
+
+**사용 패턴**:
+```dart
+final converter = TxtToPdfConverter();
+final pdfBytes = await converter.convertToPdf(filePath);
+// pdfBytes를 CommonPdfViewer 또는 UniversalPdfViewer로 전달
+```
+
 #### 플랫폼별 네이티브 뷰어 지원 (2026.01.17)
 
 "외부 뷰어로 열기" 설정 시 플랫폼별 처리:
@@ -269,11 +321,14 @@ SearchBottomBar(
 - **pdf**: PDF 생성 (CSV/TXT → PDF 변환)
 - **docx_file_viewer**: DOCX 뷰어 (네이티브 Flutter 렌더링, local package)
 - **csv**: CSV 파싱
-- **data_table_2**: 고급 DataTable (CSV 뷰어)
-- **file_picker**: 파일 선택
+- **data_table_2**: 고급 DataTable (CSV 뷰어용)
+- **file_picker**: 파일 선택 대화상자
+- **receive_sharing_intent**: 파일 확장자 연결 (다른 앱에서 파일 열기)
+- **open_filex**: 네이티브 외부 뷰어로 파일 열기 (iOS iWork 등)
 - **google_mobile_ads**: 광고 (iOS/Android만 지원)
-- **shared_preferences**: 로컬 저장소 (최근 문서 기록)
+- **shared_preferences**: 로컬 저장소 (최근 문서, 설정, 사용량 등)
 - **logger**: Debug-only 로깅 (appLogger)
+- **path_provider**: 임시 디렉토리 및 앱 디렉토리 경로
 
 ## Document Viewers
 
