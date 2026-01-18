@@ -77,5 +77,8 @@
 	<!-- Privacy - Photo Library Usage Description -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>문서 파일을 열기 위해 사진 라이브러리 접근이 필요합니다.</string>
+	<!-- App Transport Security - Export Compliance -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
