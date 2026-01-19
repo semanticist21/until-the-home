@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/converters/document_converter.dart';
-import '../../core/utils/pdf_export_utils.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/common_pdf_viewer.dart';
 
@@ -108,14 +108,23 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
     }
 
     try {
-      final pdfPath = await PdfExportUtils.savePdfToTemp(
-        _pdfBytes!,
-        widget.title,
+      final outputPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'PDF 저장',
+        fileName: '${p.basenameWithoutExtension(widget.title)}.pdf',
       );
+
+      if (outputPath == null) {
+        // 사용자가 취소
+        return;
+      }
+
+      // 파일 저장
+      final file = File(outputPath);
+      await file.writeAsBytes(_pdfBytes!, flush: true);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF로 저장되었습니다: ${p.basename(pdfPath)}')),
+          SnackBar(content: Text('PDF가 저장되었습니다: ${p.basename(outputPath)}')),
         );
       }
     } catch (e) {

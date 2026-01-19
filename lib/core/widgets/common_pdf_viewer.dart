@@ -257,9 +257,9 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
         actions: [
           if (widget.onSave != null)
             IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
+              icon: const Icon(Icons.download),
               onPressed: widget.onSave,
-              tooltip: 'PDF로 저장',
+              tooltip: 'PDF 다운로드',
             ),
         ],
       ),
