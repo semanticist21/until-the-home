@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-Google Play Store App Bundle Upload Script
-Uses Google Play Developer API to upload AAB files
+Upload AAB to Google Play Store using Google Play Developer API v3
 """
 
 import sys
-import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -17,18 +15,9 @@ AAB_FILE = 'build/app/outputs/bundle/release/app-release.aab'
 TRACK = 'production'  # production, beta, alpha, internal
 
 def upload_to_playstore():
-    """Upload App Bundle to Google Play Store"""
+    """Upload AAB and submit to production track"""
 
-    # Check if AAB file exists
-    if not os.path.exists(AAB_FILE):
-        print(f"❌ Error: AAB file not found at {AAB_FILE}")
-        sys.exit(1)
-
-    print(f"📦 Uploading {AAB_FILE} to Google Play Store...")
-    print(f"   Package: {PACKAGE_NAME}")
-    print(f"   Track: {TRACK}")
-
-    # Authenticate
+    print("🔐 Authenticating with Google Play API...")
     credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE,
         scopes=['https://www.googleapis.com/auth/androidpublisher']
@@ -37,54 +26,55 @@ def upload_to_playstore():
     service = build('androidpublisher', 'v3', credentials=credentials)
 
     try:
-        # Step 1: Create an edit
-        print("\n1️⃣ Creating edit...")
-        edit_request = service.edits().insert(packageName=PACKAGE_NAME)
+        # Create a new edit session
+        print("📝 Creating new edit session...")
+        edit_request = service.edits().insert(body={}, packageName=PACKAGE_NAME)
         edit = edit_request.execute()
         edit_id = edit['id']
-        print(f"   ✅ Edit ID: {edit_id}")
+        print(f"✅ Edit ID: {edit_id}")
 
-        # Step 2: Upload the bundle
-        print("\n2️⃣ Uploading bundle...")
-        bundle_request = service.edits().bundles().upload(
-            packageName=PACKAGE_NAME,
+        # Upload the AAB
+        print(f"📦 Uploading AAB: {AAB_FILE}")
+        media = MediaFileUpload(AAB_FILE, mimetype='application/octet-stream', resumable=True)
+        upload_request = service.edits().bundles().upload(
             editId=edit_id,
-            media_body=MediaFileUpload(AAB_FILE, mimetype='application/octet-stream')
-        )
-        bundle_response = bundle_request.execute()
-        version_code = bundle_response['versionCode']
-        print(f"   ✅ Bundle uploaded. Version code: {version_code}")
-
-        # Step 3: Assign to track
-        print(f"\n3️⃣ Assigning to {TRACK} track...")
-        track_request = service.edits().tracks().update(
             packageName=PACKAGE_NAME,
+            media_body=media
+        )
+        bundle_response = upload_request.execute()
+        version_code = bundle_response['versionCode']
+        print(f"✅ Uploaded version code: {version_code}")
+
+        # Assign to production track
+        print(f"🚀 Assigning to {TRACK} track...")
+        track_request = service.edits().tracks().update(
             editId=edit_id,
             track=TRACK,
+            packageName=PACKAGE_NAME,
             body={
                 'releases': [{
                     'versionCodes': [version_code],
-                    'status': 'completed',  # completed = go live immediately
+                    'status': 'completed',  # completed = submit for review
                 }]
             }
         )
         track_response = track_request.execute()
-        print(f"   ✅ Assigned to {TRACK} track")
+        print(f"✅ Track updated: {track_response['track']}")
 
-        # Step 4: Commit the edit
-        print("\n4️⃣ Committing edit...")
+        # Commit the changes
+        print("💾 Committing changes...")
         commit_request = service.edits().commit(
-            packageName=PACKAGE_NAME,
-            editId=edit_id
+            editId=edit_id,
+            packageName=PACKAGE_NAME
         )
         commit_response = commit_request.execute()
-        print(f"   ✅ Edit committed successfully!")
+        print(f"✅ Committed edit ID: {commit_response['id']}")
 
-        print("\n✅ Upload completed successfully!")
-        print(f"   Version code {version_code} is now in {TRACK} track")
+        print("\n🎉 Successfully submitted to Google Play Store!")
+        print(f"Version code {version_code} is now submitted for review.")
 
     except Exception as e:
-        print(f"\n❌ Upload failed: {e}")
+        print(f"\n❌ Error: {e}")
         sys.exit(1)
 
 if __name__ == '__main__':

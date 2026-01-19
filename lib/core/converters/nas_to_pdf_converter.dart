@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/utils/app_logger.dart';
 import 'document_converter.dart';
 
 /// NAS API를 통해 HWP/HWPX/Office 문서를 PDF로 변환하는 컨버터
@@ -102,10 +103,14 @@ class NasToPdfConverter implements DocumentConverter {
     String url,
     String fieldName,
   ) async {
+    appLogger.d('[NasToPdfConverter] Converting $fileName to PDF via $url');
+    appLogger.d('[NasToPdfConverter] File size: ${fileBytes.length} bytes');
+
     final boundary = 'kkomi-boundary-${DateTime.now().millisecondsSinceEpoch}';
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 30);
     try {
+      final startTime = DateTime.now();
       final request = await client.postUrl(Uri.parse(url));
       request.headers.set(
         HttpHeaders.contentTypeHeader,
@@ -130,18 +135,39 @@ class NasToPdfConverter implements DocumentConverter {
       request.add(fileBytes);
       request.add(utf8.encode('\r\n--$boundary--\r\n'));
 
+      appLogger.d('[NasToPdfConverter] Sending request...');
       final response = await request.close().timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 65), // Increased for large files (e.g. PPTX)
       );
+      appLogger.d(
+        '[NasToPdfConverter] Response status: ${response.statusCode}',
+      );
+
       final responseBytes = await _readResponseBytes(
         response,
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 65));
+
+      final elapsedTime = DateTime.now().difference(startTime);
+      appLogger.d(
+        '[NasToPdfConverter] Conversion completed in ${elapsedTime.inMilliseconds}ms',
+      );
+      appLogger.d(
+        '[NasToPdfConverter] PDF size: ${responseBytes.length} bytes',
+      );
+
       if (response.statusCode != HttpStatus.ok) {
-        throw Exception(
-          '변환 실패 (${response.statusCode}): ${utf8.decode(responseBytes)}',
-        );
+        final errorMsg = utf8.decode(responseBytes);
+        appLogger.e('[NasToPdfConverter] Conversion failed', error: errorMsg);
+        throw Exception('변환 실패 (${response.statusCode}): $errorMsg');
       }
       return responseBytes;
+    } catch (e, st) {
+      appLogger.e(
+        '[NasToPdfConverter] Exception during conversion',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
     } finally {
       client.close(force: true);
     }
