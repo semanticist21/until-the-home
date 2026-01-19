@@ -59,24 +59,47 @@ class RecentDocumentsStore {
       documents.value = [];
       return;
     }
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        documents.value = [];
+        return;
+      }
+      documents.value = decoded
+          .whereType<Map>()
+          .map(
+            (item) => RecentDocument.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (e, st) {
+      appLogger.e(
+        '[RECENT_DOCS] Failed to decode stored documents',
+        error: e,
+        stackTrace: st,
+      );
       documents.value = [];
-      return;
     }
-    documents.value = decoded
-        .whereType<Map>()
-        .map((item) => RecentDocument.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
   }
 
-  Future<void> addDocument(String path) async {
+  Future<void> addDocument(
+    String path, {
+    String? name,
+    String? type,
+    DateTime? openedAt,
+  }) async {
     await load();
-    final name = p.basename(path);
-    final type = _extensionType(path);
-    final now = DateTime.now();
+    final resolvedName = name?.isNotEmpty == true ? name! : p.basename(path);
+    final resolvedType = type?.isNotEmpty == true
+        ? type!
+        : _extensionType(path);
+    final now = openedAt ?? DateTime.now();
     final List<RecentDocument> updated = [
-      RecentDocument(path: path, name: name, type: type, openedAt: now),
+      RecentDocument(
+        path: path,
+        name: resolvedName,
+        type: resolvedType,
+        openedAt: now,
+      ),
       ...documents.value.where((doc) => doc.path != path),
     ];
     if (updated.length > _maxItems) {
@@ -112,7 +135,7 @@ class RecentDocumentsStore {
         }
         final file = _fileFromPath(doc.path);
         if (file == null) {
-          return false;  // Invalid file path
+          return false; // Invalid file path
         }
         final exists = file.existsSync();
         if (!exists) {
@@ -122,10 +145,7 @@ class RecentDocumentsStore {
         }
         return exists;
       } catch (e) {
-        appLogger.e(
-          '[RECENT_DOCS] Error checking file: ${doc.name}',
-          error: e,
-        );
+        appLogger.e('[RECENT_DOCS] Error checking file: ${doc.name}', error: e);
         return false;
       }
     }).toList();

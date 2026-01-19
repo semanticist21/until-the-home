@@ -85,7 +85,12 @@ class _OpenFileButtonState extends State<OpenFileButton> {
         return;
       }
 
-      await RecentDocumentsStore.instance.addDocument(path);
+      await RecentDocumentsStore.instance.addDocument(
+        path,
+        name: path.split('/').last,
+        type: fileType,
+        openedAt: DateTime.now(),
+      );
       appLogger.i('[OPEN_FILE_BUTTON] Added to recent documents');
 
       // Open viewer after adding to recent documents

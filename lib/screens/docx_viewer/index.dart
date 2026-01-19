@@ -31,6 +31,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   bool _isFileReady = false;
   bool _isDocxParsing = true;
   bool _didCountUsage = false;
+  int? _pageCount;
   String? _error;
   bool _showSearchInput = false;
   final _searchController = DocxSearchController();
@@ -161,6 +162,9 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
                     vertical: 16,
                   ),
                 ),
+                onPageCount: (count) {
+                  _pageCount = count;
+                },
                 onLoaded: () {
                   debugPrint(
                     '[DOCX_VIEWER] onLoaded called - removing overlay',
@@ -242,7 +246,8 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   Future<void> _recordUsageOnce() async {
     if (_didCountUsage) return;
     _didCountUsage = true;
+    final pagesToAdd = _pageCount ?? 1;
     await WeeklyLimitStore.instance.addUsage(1);
-    await WeeklyPagesStore.instance.addPages(1);
+    await WeeklyPagesStore.instance.addPages(pagesToAdd);
   }
 }

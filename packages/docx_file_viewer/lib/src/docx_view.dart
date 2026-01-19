@@ -43,6 +43,9 @@ class DocxView extends StatefulWidget {
   /// Callback when document loading completes.
   final VoidCallback? onLoaded;
 
+  /// Callback with estimated page count.
+  final ValueChanged<int>? onPageCount;
+
   /// Callback when document loading fails.
   final void Function(Object error)? onError;
 
@@ -54,6 +57,7 @@ class DocxView extends StatefulWidget {
     this.config = const DocxViewConfig(),
     this.searchController,
     this.onLoaded,
+    this.onPageCount,
     this.onError,
   }) : assert(
           file != null || bytes != null || path != null,
@@ -66,12 +70,14 @@ class DocxView extends StatefulWidget {
     Key? key,
     DocxViewConfig config = const DocxViewConfig(),
     DocxSearchController? searchController,
+    ValueChanged<int>? onPageCount,
   }) {
     return DocxView(
       key: key,
       file: file,
       config: config,
       searchController: searchController,
+      onPageCount: onPageCount,
     );
   }
 
@@ -81,12 +87,14 @@ class DocxView extends StatefulWidget {
     Key? key,
     DocxViewConfig config = const DocxViewConfig(),
     DocxSearchController? searchController,
+    ValueChanged<int>? onPageCount,
   }) {
     return DocxView(
       key: key,
       bytes: bytes,
       config: config,
       searchController: searchController,
+      onPageCount: onPageCount,
     );
   }
 
@@ -96,12 +104,14 @@ class DocxView extends StatefulWidget {
     Key? key,
     DocxViewConfig config = const DocxViewConfig(),
     DocxSearchController? searchController,
+    ValueChanged<int>? onPageCount,
   }) {
     return DocxView(
       key: key,
       path: path,
       config: config,
       searchController: searchController,
+      onPageCount: onPageCount,
     );
   }
 
@@ -193,6 +203,11 @@ class _DocxViewState extends State<DocxView> {
 
       // Generate widgets
       final widgets = _generator.generateWidgets(doc);
+
+      final pageCount = _generator.estimatePageCount(doc);
+      if (pageCount > 0) {
+        widget.onPageCount?.call(pageCount);
+      }
 
       // Build search index
       final textIndex = _generator.extractTextForSearch(doc);

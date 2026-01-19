@@ -107,6 +107,77 @@ class DocxWidgetGenerator {
     return _generateContinuousWidgets(doc);
   }
 
+  /// Estimate page count using the same layout heuristics as paged mode.
+  int estimatePageCount(DocxBuiltDocument doc) {
+    if (doc.elements.isEmpty) {
+      return 1;
+    }
+
+    final pageWidth = config.pageWidth ?? 794;
+    final pageHeight = config.pageHeight ?? (pageWidth * 1.414);
+    const pagePadding = 48.0 * 2;
+    const headerFooterEstimate = 100.0;
+    final availableHeight = pageHeight - pagePadding - headerFooterEstimate;
+
+    double currentPageHeight = 0;
+    int pageCount = 1;
+    List<DocxNode> currentBatch = [];
+
+    double estimateBatchHeight(List<DocxNode> batch) {
+      double height = 0;
+      for (var element in batch) {
+        height += _estimateElementHeight(element, pageWidth);
+      }
+      return height;
+    }
+
+    void flushBatch() {
+      if (currentBatch.isNotEmpty) {
+        final batchHeight = estimateBatchHeight(currentBatch);
+        if (currentPageHeight + batchHeight > availableHeight &&
+            currentPageHeight > 0) {
+          pageCount += 1;
+          currentPageHeight = 0;
+        }
+        currentPageHeight += batchHeight;
+        currentBatch.clear();
+      }
+    }
+
+    for (var element in doc.elements) {
+      bool isPageBreak = false;
+      if (element is DocxSectionBreakBlock) {
+        isPageBreak = true;
+      } else if (element is DocxParagraph && element.pageBreakBefore) {
+        isPageBreak = true;
+      }
+
+      if (isPageBreak) {
+        flushBatch();
+        if (currentPageHeight > 0) {
+          pageCount += 1;
+          currentPageHeight = 0;
+        }
+        if (element is! DocxSectionBreakBlock) {
+          currentBatch.add(element);
+        }
+      } else {
+        currentBatch.add(element);
+        bool lastWasFloatingTable =
+            element is DocxTable && element.position != null;
+        if (!lastWasFloatingTable) {
+          final batchHeight = estimateBatchHeight(currentBatch);
+          if (batchHeight > availableHeight) {
+            flushBatch();
+          }
+        }
+      }
+    }
+
+    flushBatch();
+    return pageCount;
+  }
+
   /// Original continuous generation logic
   List<Widget> _generateContinuousWidgets(DocxBuiltDocument doc) {
     final widgets = <Widget>[];

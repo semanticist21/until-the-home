@@ -57,7 +57,7 @@ class _MyAppState extends State<MyApp> {
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
       (List<SharedMediaFile> files) {
         if (files.isNotEmpty) {
-          _handleSharedFile(files.first);
+          unawaited(_handleSharedFile(files.first));
         }
       },
       onError: (err) {
@@ -70,13 +70,13 @@ class _MyAppState extends State<MyApp> {
       List<SharedMediaFile> files,
     ) {
       if (files.isNotEmpty) {
-        _handleSharedFile(files.first);
+        unawaited(_handleSharedFile(files.first));
         ReceiveSharingIntent.instance.reset();
       }
     });
   }
 
-  void _handleSharedFile(SharedMediaFile file) {
+  Future<void> _handleSharedFile(SharedMediaFile file) async {
     final filePath = file.path;
     final meta = _deriveSharedFileMeta(file);
     final fileName = meta.fileName;
@@ -85,7 +85,12 @@ class _MyAppState extends State<MyApp> {
     appLogger.i('[SHARING] Received file: $fileName, type: $extension');
 
     // 최근 문서에 추가
-    RecentDocumentsStore.instance.addDocument(filePath);
+    await RecentDocumentsStore.instance.addDocument(
+      filePath,
+      name: fileName,
+      type: extension,
+      openedAt: DateTime.now(),
+    );
 
     // RecentDocument 객체 생성 (뷰어 열기용)
     final doc = RecentDocument(
