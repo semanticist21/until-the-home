@@ -167,9 +167,18 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
 
   void _updateSearchResults() {
     if (mounted) {
+      final matches = _textSearcher?.matches ?? [];
+      final shouldJumpToFirst =
+          _currentMatchIndex == null && matches.isNotEmpty;
       setState(() {
-        _matchCount = _textSearcher?.matches.length ?? 0;
+        _matchCount = matches.length;
+        if (shouldJumpToFirst) {
+          _currentMatchIndex = 0;
+        }
       });
+      if (shouldJumpToFirst) {
+        _textSearcher!.goToMatchOfIndex(0);
+      }
     }
   }
 
@@ -213,15 +222,6 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
 
     // Use PdfTextSearcher for searching
     _textSearcher!.startTextSearch(_searchQuery, caseInsensitive: true);
-
-    // Match count will be updated by listener
-    // Navigate to first match when available
-    if (_textSearcher!.matches.isNotEmpty) {
-      setState(() {
-        _currentMatchIndex = 0;
-      });
-      _textSearcher!.goToMatchOfIndex(0);
-    }
   }
 
   void _onPreviousMatch() {

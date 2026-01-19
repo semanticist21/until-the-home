@@ -59,6 +59,7 @@ class _OpenFileButtonState extends State<OpenFileButton> {
         'HWPX',
         'DOC',
         'XLS',
+        'XLSX',
         'PPT',
         'PPTX',
       ];

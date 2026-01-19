@@ -30,6 +30,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
   File? _file;
   bool _isFileReady = false;
   bool _isDocxParsing = true;
+  bool _didCountUsage = false;
   String? _error;
   bool _showSearchInput = false;
   final _searchController = DocxSearchController();
@@ -66,15 +67,16 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
           _isFileReady = true;
         });
       } else {
+        final file = File(widget.filePath);
+        final exists = await file.exists();
+        if (!exists) {
+          throw Exception('File not found: ${widget.filePath}');
+        }
         setState(() {
-          _file = File(widget.filePath);
+          _file = file;
           _isFileReady = true;
         });
       }
-
-      // 주간 열람/페이지 추적 (DOCX는 페이지 수 산정 불가 → +1)
-      await WeeklyLimitStore.instance.addUsage(1);
-      await WeeklyPagesStore.instance.addPages(1);
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -177,6 +179,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
                       );
                     }
                   });
+                  _recordUsageOnce();
                 },
                 onError: (error) {
                   debugPrint('[DOCX_VIEWER] onError called: $error');
@@ -234,5 +237,12 @@ class _DocxViewerScreenState extends State<DocxViewerScreen> {
         );
       },
     );
+  }
+
+  Future<void> _recordUsageOnce() async {
+    if (_didCountUsage) return;
+    _didCountUsage = true;
+    await WeeklyLimitStore.instance.addUsage(1);
+    await WeeklyPagesStore.instance.addPages(1);
   }
 }

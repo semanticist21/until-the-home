@@ -102,7 +102,14 @@ class RecentDocumentsStore {
     await load();
     final filtered = documents.value.where((doc) {
       try {
-        return File(doc.path).existsSync();
+        if (_isAssetPath(doc.path) || _isContentUri(doc.path)) {
+          return true;
+        }
+        final file = _fileFromPath(doc.path);
+        if (file == null) {
+          return true;
+        }
+        return file.existsSync();
       } catch (_) {
         return false;
       }
@@ -122,5 +129,30 @@ class RecentDocumentsStore {
       return 'FILE';
     }
     return ext.toUpperCase();
+  }
+
+  bool _isAssetPath(String path) {
+    return path.startsWith('assets/') || path.startsWith('test_samples/');
+  }
+
+  bool _isContentUri(String path) {
+    return path.startsWith('content://');
+  }
+
+  File? _fileFromPath(String path) {
+    if (path.startsWith('file://')) {
+      final uri = Uri.tryParse(path);
+      if (uri != null) {
+        return File.fromUri(uri);
+      }
+      return null;
+    }
+    if (path.startsWith('/')) {
+      return File(path);
+    }
+    if (RegExp(r'^[A-Za-z]:\\').hasMatch(path)) {
+      return File(path);
+    }
+    return null;
   }
 }

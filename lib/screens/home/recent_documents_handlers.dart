@@ -15,11 +15,19 @@ import '../docx_viewer/index.dart';
 import '../universal_pdf_viewer/index.dart';
 
 bool _isAssetPath(String path) {
-  // Asset paths don't start with absolute path indicators
-  // Check for common asset path prefixes
-  return path.startsWith('assets/') ||
-      path.startsWith('test_samples/') ||
-      !path.startsWith('/'); // Unix/Linux/macOS absolute paths
+  if (path.startsWith('content://') || path.startsWith('file://')) {
+    return false;
+  }
+  if (path.startsWith('assets/') || path.startsWith('test_samples/')) {
+    return true;
+  }
+  if (path.startsWith('/')) {
+    return false; // Unix/Linux/macOS absolute paths
+  }
+  if (RegExp(r'^[A-Za-z]:\\').hasMatch(path)) {
+    return false; // Windows absolute paths
+  }
+  return true;
 }
 
 /// 확장자별 문서 뷰어를 여는 통합 핸들러
@@ -139,13 +147,23 @@ Future<bool> openRecentDocument(
       return true;
 
     case 'DOCX':
-    case 'XLSX':
       NavigationUtils.pushScreen(
         context,
         (_) => DocxViewerScreen(
           filePath: doc.path,
           title: doc.name,
           isAsset: isAsset,
+        ),
+      );
+      return true;
+    case 'XLSX':
+      NavigationUtils.pushScreen(
+        context,
+        (_) => UniversalPdfViewer(
+          filePath: doc.path,
+          title: doc.name,
+          isAsset: isAsset,
+          converter: NasToPdfConverter(),
         ),
       );
       return true;
