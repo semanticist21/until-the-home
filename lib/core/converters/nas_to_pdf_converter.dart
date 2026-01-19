@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -45,9 +46,75 @@ class NasToPdfConverter implements DocumentConverter {
     final url = _getEndpointUrl(ext);
     final fieldName = _getFieldName(ext);
 
-    // 3. NAS API 호출
+    // 3. NAS API 호출 (자동 retry 포함)
     final fileName = p.basename(filePath);
-    return _requestConversion(fileBytes, fileName, url, fieldName);
+    return _requestConversionWithRetry(fileBytes, fileName, url, fieldName);
+  }
+
+  /// 네트워크 오류 시 자동 재시도하는 변환 요청
+  Future<Uint8List> _requestConversionWithRetry(
+    Uint8List fileBytes,
+    String fileName,
+    String url,
+    String fieldName, {
+    int maxRetries = 3,
+  }) async {
+    int attempt = 0;
+    Exception? lastException;
+
+    while (attempt < maxRetries) {
+      attempt++;
+      try {
+        appLogger.d(
+          '[NasToPdfConverter] Attempt $attempt/$maxRetries for $fileName',
+        );
+        return await _requestConversion(fileBytes, fileName, url, fieldName);
+      } on SocketException catch (e) {
+        lastException = e;
+        appLogger.w(
+          '[NasToPdfConverter] Network error on attempt $attempt/$maxRetries',
+          error: e,
+        );
+        if (attempt < maxRetries) {
+          final delaySeconds = (1 << (attempt - 1)); // 1s, 2s, 4s
+          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
+          await Future.delayed(Duration(seconds: delaySeconds));
+        }
+      } on TimeoutException catch (e) {
+        lastException = Exception('Timeout: ${e.message}');
+        appLogger.w(
+          '[NasToPdfConverter] Timeout on attempt $attempt/$maxRetries',
+          error: e,
+        );
+        if (attempt < maxRetries) {
+          final delaySeconds = (1 << (attempt - 1));
+          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
+          await Future.delayed(Duration(seconds: delaySeconds));
+        }
+      } on HttpException catch (e) {
+        lastException = e;
+        appLogger.w(
+          '[NasToPdfConverter] HTTP error on attempt $attempt/$maxRetries',
+          error: e,
+        );
+        if (attempt < maxRetries) {
+          final delaySeconds = (1 << (attempt - 1));
+          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
+          await Future.delayed(Duration(seconds: delaySeconds));
+        }
+      } catch (e) {
+        // 400, 500 등 서버 오류는 retry 하지 않음 (파일 문제일 가능성)
+        appLogger.e('[NasToPdfConverter] Non-retryable error', error: e);
+        rethrow;
+      }
+    }
+
+    // 모든 재시도 실패
+    appLogger.e(
+      '[NasToPdfConverter] All $maxRetries attempts failed',
+      error: lastException,
+    );
+    throw lastException ?? Exception('변환 실패: 최대 재시도 횟수($maxRetries)를 초과했습니다.');
   }
 
   String _getEndpointUrl(String extension) {
