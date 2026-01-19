@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_logger.dart';
+
 class RecentDocument {
   const RecentDocument({
     required this.path,
@@ -100,27 +102,41 @@ class RecentDocumentsStore {
 
   Future<void> pruneMissingFiles() async {
     await load();
+    final before = documents.value.length;
     final filtered = documents.value.where((doc) {
       try {
         if (_isAssetPath(doc.path) || _isContentUri(doc.path)) {
+          // Keep all assets and content URIs - don't check if accessible
+          // Content URIs may have temporary permissions that are restored later
           return true;
         }
         final file = _fileFromPath(doc.path);
         if (file == null) {
-          return true;
+          return false;  // Invalid file path
         }
-        return file.existsSync();
-      } catch (_) {
+        final exists = file.existsSync();
+        if (!exists) {
+          appLogger.w(
+            '[RECENT_DOCS] Pruning missing file: ${doc.name} at ${doc.path}',
+          );
+        }
+        return exists;
+      } catch (e) {
+        appLogger.e(
+          '[RECENT_DOCS] Error checking file: ${doc.name}',
+          error: e,
+        );
         return false;
       }
     }).toList();
-    if (filtered.length == documents.value.length) {
-      return;
+    final pruned = before - filtered.length;
+    if (pruned > 0) {
+      appLogger.i('[RECENT_DOCS] Pruned $pruned missing files');
+      documents.value = filtered;
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(filtered.map((doc) => doc.toJson()).toList());
+      await prefs.setString(_prefsKey, encoded);
     }
-    documents.value = filtered;
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(filtered.map((doc) => doc.toJson()).toList());
-    await prefs.setString(_prefsKey, encoded);
   }
 
   String _extensionType(String path) {

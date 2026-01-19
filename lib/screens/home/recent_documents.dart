@@ -17,7 +17,8 @@ class _RecentDocumentsState extends State<RecentDocuments> {
   void initState() {
     super.initState();
     RecentDocumentsStore.instance.load();
-    RecentDocumentsStore.instance.pruneMissingFiles();
+    // Don't auto-prune on every load - files may be temporarily inaccessible
+    // User can manually prune via settings if needed
   }
 
   @override

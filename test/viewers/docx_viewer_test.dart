@@ -8,23 +8,19 @@ void main() {
   group('DOCX Viewer Widget Tests', () {
     // DOCX viewer tests skipped: docx_file_viewer library creates timers during
     // initialization that persist after widget disposal - requires integration testing
-    testWidgets(
-      'DOCX viewer can be instantiated',
-      (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: DocxViewerScreen(
-              filePath: 'test_samples/sample.docx',
-              title: 'Test DOCX',
-              isAsset: true,
-            ),
+    testWidgets('DOCX viewer can be instantiated', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DocxViewerScreen(
+            filePath: 'test_samples/sample.docx',
+            title: 'Test DOCX',
+            isAsset: true,
           ),
-        );
+        ),
+      );
 
-        // Just verify the widget can be created
-        expect(find.byType(DocxViewerScreen), findsOneWidget);
-      },
-      skip: true,
-    );
+      // Just verify the widget can be created
+      expect(find.byType(DocxViewerScreen), findsOneWidget);
+    }, skip: true);
   });
 }

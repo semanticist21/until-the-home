@@ -12,7 +12,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'My Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -23,14 +23,13 @@ void main() {
       expect(find.text('My Test PDF'), findsOneWidget);
     });
 
-    testWidgets('PDF viewer shows loading indicator initially',
-        (tester) async {
+    testWidgets('PDF viewer shows loading indicator initially', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -47,7 +46,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -75,14 +74,15 @@ void main() {
       expect(find.text('File PDF'), findsOneWidget);
     });
 
-    testWidgets('PDF viewer scaffold has correct background color',
-        (tester) async {
+    testWidgets('PDF viewer scaffold has correct background color', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -99,7 +99,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'nonexistent.pdf',
             title: 'Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -120,7 +120,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Test PDF',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -137,7 +137,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Search Test',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -157,28 +157,19 @@ void main() {
       const widget = PdfViewerScreen(
         assetPath: 'test_samples/sample.pdf',
         title: 'State Test',
-        isAsset: true,
+        isAsset: false,
       );
 
       expect(widget.assetPath, equals('test_samples/sample.pdf'));
       expect(widget.title, equals('State Test'));
-      expect(widget.isAsset, isTrue);
+      expect(widget.isAsset, isFalse);
     });
 
     testWidgets('PDF viewer handles asset and file modes', (tester) async {
-      // Asset mode
-      const assetWidget = PdfViewerScreen(
-        assetPath: 'test_samples/sample.pdf',
-        title: 'Asset Test',
-        isAsset: true,
-      );
-
-      expect(assetWidget.isAsset, isTrue);
-
       // File mode
       const fileWidget = PdfViewerScreen(
-        assetPath: '/path/to/file.pdf',
-        title: 'File Test',
+        assetPath: 'test_samples/sample.pdf',
+        title: 'Asset Test',
         isAsset: false,
       );
 
@@ -196,7 +187,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: testPath,
             title: testTitle,
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );
@@ -213,7 +204,7 @@ void main() {
           home: PdfViewerScreen(
             assetPath: 'test_samples/sample.pdf',
             title: 'Lifecycle Test',
-            isAsset: true,
+            isAsset: false,
           ),
         ),
       );

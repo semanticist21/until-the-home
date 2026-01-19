@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
 
@@ -17,8 +16,7 @@ void main() {
       test(
         'Convert sample.hwp to PDF via API',
         () async {
-          final hwpBytes = await rootBundle.load('test_samples/sample.hwp');
-          final fileBytes = hwpBytes.buffer.asUint8List();
+          final fileBytes = await File('test_samples/sample.hwp').readAsBytes();
 
           try {
             final pdfBytes = await _requestConversion(
@@ -68,8 +66,9 @@ void main() {
       test(
         'Convert sample.pptx to PDF via API',
         () async {
-          final pptxBytes = await rootBundle.load('test_samples/sample.pptx');
-          final fileBytes = pptxBytes.buffer.asUint8List();
+          final fileBytes = await File(
+            'test_samples/sample.pptx',
+          ).readAsBytes();
 
           try {
             final pdfBytes = await _requestConversion(

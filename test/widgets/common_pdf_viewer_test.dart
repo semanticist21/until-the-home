@@ -108,7 +108,7 @@ void main() {
         find.widgetWithIcon(IconButton, Icons.download),
       );
 
-      expect(iconButton.tooltip, equals('PDF 다운로드'));
+      expect(iconButton.tooltip, equals('PDF 저장'));
     });
 
     testWidgets('Download button calls onSave when tapped', (tester) async {

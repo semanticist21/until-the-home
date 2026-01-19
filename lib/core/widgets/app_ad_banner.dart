@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../utils/app_logger.dart';
+
 class AppAdBanner extends StatefulWidget {
   const AppAdBanner({super.key});
 
@@ -33,24 +35,38 @@ class _AppAdBannerState extends State<AppAdBanner> {
   @override
   void initState() {
     super.initState();
+    appLogger.i(
+      '[APP_AD_BANNER] initState - shouldShowAds: $_shouldShowAds, kDebugMode: $kDebugMode, platform: ${Platform.operatingSystem}',
+    );
     if (_shouldShowAds) {
       _loadAd();
+    } else {
+      appLogger.w(
+        '[APP_AD_BANNER] Ads disabled - debug mode or unsupported platform',
+      );
     }
   }
 
   void _loadAd() {
+    final adUnitId = _adUnitId;
+    appLogger.i('[APP_AD_BANNER] Loading ad with unit ID: $adUnitId');
+
     _bannerAd = BannerAd(
-      adUnitId: _adUnitId,
+      adUnitId: adUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
+          appLogger.i('[APP_AD_BANNER] ✅ Ad loaded successfully');
           setState(() {
             _isLoaded = true;
           });
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('BannerAd failed to load: $error');
+          appLogger.e(
+            '[APP_AD_BANNER] ❌ Ad failed to load - Code: ${error.code}, Message: ${error.message}, Domain: ${error.domain}',
+            error: error,
+          );
           ad.dispose();
         },
       ),
@@ -65,10 +81,18 @@ class _AppAdBannerState extends State<AppAdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_shouldShowAds || !_isLoaded || _bannerAd == null) {
+    if (!_shouldShowAds) {
       return const SizedBox.shrink();
     }
 
+    if (!_isLoaded || _bannerAd == null) {
+      appLogger.d(
+        '[APP_AD_BANNER] build - ad not ready (loaded: $_isLoaded, ad: ${_bannerAd != null})',
+      );
+      return const SizedBox.shrink();
+    }
+
+    appLogger.d('[APP_AD_BANNER] build - showing ad banner');
     return SizedBox(
       width: _bannerAd!.size.width.toDouble(),
       height: _bannerAd!.size.height.toDouble(),

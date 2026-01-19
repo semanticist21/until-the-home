@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -77,8 +78,9 @@ class _MyAppState extends State<MyApp> {
 
   void _handleSharedFile(SharedMediaFile file) {
     final filePath = file.path;
-    final fileName = filePath.split('/').last;
-    final extension = fileName.split('.').last.toUpperCase();
+    final meta = _deriveSharedFileMeta(file);
+    final fileName = meta.fileName;
+    final extension = meta.extension;
 
     appLogger.i('[SHARING] Received file: $fileName, type: $extension');
 
@@ -128,4 +130,67 @@ class _MyAppState extends State<MyApp> {
       home: const HomeScreen(),
     );
   }
+}
+
+({String fileName, String extension}) _deriveSharedFileMeta(
+  SharedMediaFile file,
+) {
+  final path = file.path;
+  String fileName = p.basename(path);
+  final uri = Uri.tryParse(path);
+  if ((fileName.isEmpty || fileName == path) &&
+      uri != null &&
+      uri.pathSegments.isNotEmpty) {
+    fileName = uri.pathSegments.last;
+  }
+
+  String extension = _extensionFromPath(path);
+  if (extension.isEmpty) {
+    extension = _extensionFromPath(fileName);
+  }
+  if (extension.isEmpty) {
+    extension = _extensionFromMime(file.mimeType);
+  }
+  if (extension.isEmpty) {
+    extension = 'FILE';
+  }
+
+  if (fileName.isEmpty) {
+    fileName = extension == 'FILE'
+        ? 'shared_file'
+        : 'shared_file.${extension.toLowerCase()}';
+  }
+
+  return (fileName: fileName, extension: extension);
+}
+
+String _extensionFromPath(String path) {
+  final ext = p.extension(path);
+  if (ext.isEmpty) {
+    return '';
+  }
+  return ext.replaceFirst('.', '').toUpperCase();
+}
+
+String _extensionFromMime(String? mimeType) {
+  if (mimeType == null || mimeType.isEmpty) {
+    return '';
+  }
+  const mimeToExt = {
+    'application/pdf': 'PDF',
+    'text/plain': 'TXT',
+    'text/csv': 'CSV',
+    'application/csv': 'CSV',
+    'application/vnd.hancom.hwp': 'HWP',
+    'application/vnd.hancom.hwpx': 'HWPX',
+    'application/msword': 'DOC',
+    'application/vnd.ms-excel': 'XLS',
+    'application/vnd.ms-powerpoint': 'PPT',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'DOCX',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        'PPTX',
+  };
+  return mimeToExt[mimeType] ?? '';
 }

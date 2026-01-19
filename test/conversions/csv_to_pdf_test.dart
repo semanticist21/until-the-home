@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:csv/csv.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kkomi/core/utils/pdf_export_utils.dart';
 
@@ -70,7 +71,10 @@ Jane,30,Busan''';
       );
 
       expect(pdfBytes, isNotEmpty);
-      expect(pdfBytes.length, greaterThan(1000)); // Large table should be bigger
+      expect(
+        pdfBytes.length,
+        greaterThan(1000),
+      ); // Large table should be bigger
 
       // Verify PDF header
       final header = String.fromCharCodes(pdfBytes.take(5));
@@ -114,7 +118,7 @@ Jane,30,Busan''';
     });
 
     test('Convert sample.csv from test_samples', () async {
-      final csvContent = await rootBundle.loadString('test_samples/sample.csv');
+      final csvContent = await File('test_samples/sample.csv').readAsString();
 
       expect(csvContent, isNotEmpty);
 
@@ -137,24 +141,32 @@ Jane,30,Busan''';
       expect(header, equals('%PDF-'));
     });
 
-    test('Save PDF to temp directory', () async {
-      const csvContent = '''Name,Value
+    test(
+      'Save PDF to temp directory',
+      () async {
+        const csvContent = '''Name,Value
 Test,123''';
 
-      final csvData = const CsvToListConverter().convert(csvContent);
-      final headerRow = csvData.first;
-      final dataRows = csvData.sublist(1);
+        final csvData = const CsvToListConverter().convert(csvContent);
+        final headerRow = csvData.first;
+        final dataRows = csvData.sublist(1);
 
-      final pdfBytes = await PdfExportUtils.convertCsvToPdf(
-        headerRow: headerRow,
-        dataRows: dataRows,
-        title: 'Test',
-      );
+        final pdfBytes = await PdfExportUtils.convertCsvToPdf(
+          headerRow: headerRow,
+          dataRows: dataRows,
+          title: 'Test',
+        );
 
-      final tempPath = await PdfExportUtils.savePdfToTemp(pdfBytes, 'test.csv');
+        final tempPath = await PdfExportUtils.savePdfToTemp(
+          pdfBytes,
+          'test.csv',
+        );
 
-      expect(tempPath, isNotEmpty);
-      expect(tempPath.endsWith('.pdf'), isTrue);
-    }, skip: 'Requires path_provider plugin - better suited for integration tests');
+        expect(tempPath, isNotEmpty);
+        expect(tempPath.endsWith('.pdf'), isTrue);
+      },
+      skip:
+          'Requires path_provider plugin - better suited for integration tests',
+    );
   });
 }

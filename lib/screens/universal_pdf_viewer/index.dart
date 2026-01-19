@@ -111,6 +111,7 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
       final outputPath = await FilePicker.platform.saveFile(
         dialogTitle: 'PDF 저장',
         fileName: '${p.basenameWithoutExtension(widget.title)}.pdf',
+        bytes: _pdfBytes,  // Required for Android/iOS
       );
 
       if (outputPath == null) {
@@ -118,7 +119,7 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
         return;
       }
 
-      // 파일 저장
+      // 파일 저장 (Desktop platforms)
       final file = File(outputPath);
       await file.writeAsBytes(_pdfBytes!, flush: true);
 
@@ -176,7 +177,28 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
         foregroundColor: Colors.grey.shade800,
         elevation: 0,
       ),
-      body: _isConverting ? const AppLoading() : _buildError(),
+      body: _isConverting ? _buildLoading() : _buildError(),
+    );
+  }
+
+  Widget _buildLoading() {
+    final isServerConversion = widget.converter?.converterType == 'nas';
+    if (!isServerConversion) {
+      return const AppLoading();
+    }
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            '서버에서 문서를 변환 중이에요.\n파일 크기에 따라 시간이 걸릴 수 있어요.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
