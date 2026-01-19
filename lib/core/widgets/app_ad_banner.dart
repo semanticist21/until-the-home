@@ -17,32 +17,42 @@ class _AppAdBannerState extends State<AppAdBanner> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
 
-  // Production ad unit IDs
+  // Ad unit IDs (test IDs in debug, production IDs in release)
   static String get _adUnitId {
-    if (Platform.isAndroid) {
-      return 'ca-app-pub-6737616702687889/1500674457';
-    } else if (Platform.isIOS) {
-      return 'ca-app-pub-6737616702687889/1697961485';
+    if (kDebugMode) {
+      // Test ad unit IDs for debug mode
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/6300978111'; // Google test banner
+      } else if (Platform.isIOS) {
+        return 'ca-app-pub-3940256099942544/2934735716'; // Google test banner
+      }
+    } else {
+      // Production ad unit IDs
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-6737616702687889/1500674457';
+      } else if (Platform.isIOS) {
+        return 'ca-app-pub-6737616702687889/1697961485';
+      }
     }
     throw UnsupportedError('Unsupported platform');
   }
 
-  // Check if ads should be shown (release mode + supported platform)
+  // Check if ads should be shown (supported platform only)
   static bool get _shouldShowAds {
-    return !kDebugMode && (Platform.isAndroid || Platform.isIOS);
+    return Platform.isAndroid || Platform.isIOS;
   }
 
   @override
   void initState() {
     super.initState();
     appLogger.i(
-      '[APP_AD_BANNER] initState - shouldShowAds: $_shouldShowAds, kDebugMode: $kDebugMode, platform: ${Platform.operatingSystem}',
+      '[APP_AD_BANNER] initState - shouldShowAds: $_shouldShowAds, kDebugMode: $kDebugMode, platform: ${Platform.operatingSystem}, adMode: ${kDebugMode ? 'TEST' : 'PRODUCTION'}',
     );
     if (_shouldShowAds) {
       _loadAd();
     } else {
       appLogger.w(
-        '[APP_AD_BANNER] Ads disabled - debug mode or unsupported platform',
+        '[APP_AD_BANNER] Ads disabled - unsupported platform',
       );
     }
   }

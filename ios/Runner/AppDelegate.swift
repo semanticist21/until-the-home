@@ -12,9 +12,12 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // Get a registrar for our custom channel
+    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "KkomiFileResolverPlugin")!
     let channel = FlutterMethodChannel(
       name: "kkomi.file_resolver",
-      binaryMessenger: engineBridge.binaryMessenger
+      binaryMessenger: registrar.messenger()
     )
     channel.setMethodCallHandler { call, result in
       switch call.method {
