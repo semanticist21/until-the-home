@@ -77,6 +77,201 @@
 	<!-- Privacy - Photo Library Usage Description -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>문서 파일을 열기 위해 사진 라이브러리 접근이 필요합니다.</string>
+	<!-- Document Types -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<!-- PDF -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+		</dict>
+		<!-- HWP -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>HWP Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.hancom.hwp</string>
+			</array>
+		</dict>
+		<!-- HWPX -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>HWPX Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.hancom.hwpx</string>
+			</array>
+		</dict>
+		<!-- Microsoft Word (DOCX) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft Word Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.wordprocessingml.document</string>
+			</array>
+		</dict>
+		<!-- Microsoft Word (DOC) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft Word 97-2004 Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.word.doc</string>
+			</array>
+		</dict>
+		<!-- Microsoft Excel (XLSX) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft Excel Spreadsheet</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.spreadsheetml.sheet</string>
+			</array>
+		</dict>
+		<!-- Microsoft Excel (XLS) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft Excel 97-2004 Spreadsheet</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.excel.xls</string>
+			</array>
+		</dict>
+		<!-- Microsoft PowerPoint (PPTX) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft PowerPoint Presentation</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.openxmlformats.presentationml.presentation</string>
+			</array>
+		</dict>
+		<!-- Microsoft PowerPoint (PPT) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Microsoft PowerPoint 97-2004 Presentation</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.powerpoint.ppt</string>
+			</array>
+		</dict>
+		<!-- Plain Text -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Plain Text Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
+		<!-- CSV -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>CSV Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.comma-separated-values-text</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Custom UTI Declarations for HWP/HWPX -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hancom.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>Hancom HWP Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.composite-content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.hancom.hwp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hancom.hwpx</string>
+			<key>UTTypeDescription</key>
+			<string>Hancom HWPX Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.composite-content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwpx</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.hancom.hwpx</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 	<!-- App Transport Security - Export Compliance -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

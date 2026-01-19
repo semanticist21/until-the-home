@@ -283,12 +283,22 @@ void _handleSharedFile(SharedMediaFile file) {
 }
 ```
 
-### iOS (향후 구현 필요)
+### iOS 구현
 
-Share Extension 생성 필요:
-- `Info.plist` 설정 (CFBundleDocumentTypes, UTI)
-- Share Extension Swift 코드
-- App Group 설정
+`Info.plist`에 파일 확장자 연결 설정 완료:
+
+**CFBundleDocumentTypes**: 지원 문서 타입 선언
+- PDF, HWP, HWPX, DOCX, DOC, XLSX, XLS, PPTX, PPT, TXT, CSV
+- `LSHandlerRank`: `Alternate` (다른 앱이 있으면 선택지로 제공)
+- `CFBundleTypeRole`: `Viewer` (뷰어로만 동작)
+
+**UTExportedTypeDeclarations**: HWP/HWPX 커스텀 UTI 선언
+- `com.hancom.hwp`: HWP 파일 타입 정의 (확장자: .hwp, MIME: application/vnd.hancom.hwp)
+- `com.hancom.hwpx`: HWPX 파일 타입 정의 (확장자: .hwpx, MIME: application/vnd.hancom.hwpx)
+
+**동작 방식**:
+- 메일 첨부파일, 파일 앱, Safari 등에서 지원 파일 타입 선택 시 Kkomi가 앱 선택지에 표시
+- Flutter의 `receive_sharing_intent` 패키지가 파일 경로를 받아서 처리
 
 ## Design System
 
