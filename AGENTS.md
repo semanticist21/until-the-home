@@ -32,6 +32,15 @@ flutter build ios --release   # iOS
 dart run pdfrx:remove_wasm_modules --revert
 ```
 
+## Git Workflow
+
+**IMPORTANT**: Always work directly on the `main` branch. Do NOT create feature branches.
+
+- All development happens on `main`
+- Commit frequently with clear, descriptive messages
+- Use conventional commit format (e.g., `feat:`, `fix:`, `chore:`)
+- Never push without explicit instruction
+
 ## Google Play Store Deployment
 
 ### App Bundle Build
