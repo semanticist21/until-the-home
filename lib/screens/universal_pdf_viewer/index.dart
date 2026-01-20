@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../../core/converters/document_converter.dart';
 import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/app_server_conversion_loading.dart';
 import '../../core/widgets/common_pdf_viewer.dart';
 
 /// 통합 PDF 뷰어
@@ -111,7 +112,7 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
       final outputPath = await FilePicker.platform.saveFile(
         dialogTitle: 'PDF 저장',
         fileName: '${p.basenameWithoutExtension(widget.title)}.pdf',
-        bytes: _pdfBytes,  // Required for Android/iOS
+        bytes: _pdfBytes, // iOS/Android에서는 이것만으로 저장 완료
       );
 
       if (outputPath == null) {
@@ -119,9 +120,11 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
         return;
       }
 
-      // 파일 저장 (Desktop platforms)
-      final file = File(outputPath);
-      await file.writeAsBytes(_pdfBytes!, flush: true);
+      // Desktop platforms만 추가 저장 필요 (iOS/Android는 bytes로 자동 저장됨)
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final file = File(outputPath);
+        await file.writeAsBytes(_pdfBytes!, flush: true);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,23 +186,9 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
 
   Widget _buildLoading() {
     final isServerConversion = widget.converter?.converterType == 'nas';
-    if (!isServerConversion) {
-      return const AppLoading();
-    }
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 12),
-          Text(
-            '서버에서 문서를 변환 중이에요.\n파일 크기에 따라 시간이 걸릴 수 있어요.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+    return isServerConversion
+        ? const AppServerConversionLoading()
+        : const AppLoading();
   }
 
   Widget _buildError() {
