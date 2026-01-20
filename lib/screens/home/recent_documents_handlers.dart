@@ -69,7 +69,9 @@ Future<bool> openRecentDocument(
       if (!context.mounted) return false;
       await _showOpenError(
         context,
-        '공유된 파일에 접근할 수 없습니다.\n다시 공유하거나 파일을 다시 선택해주세요.',
+        '임시 파일이라 접근할 수 없습니다.\n\n'
+        'Files 앱에서 파일을 다운로드하거나\n'
+        '다른 앱에서 다시 공유해주세요.',
       );
       return false;
     }

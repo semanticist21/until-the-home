@@ -30,6 +30,7 @@ void main() async {
     UsageStreakStore.instance.updateStreak(),
     WeeklyLimitStore.instance.checkWeeklyReset(),
     WeeklyPagesStore.instance.checkWeeklyReset(),
+    RecentDocumentsStore.instance.pruneMissingFiles(),
   ]);
 
   runApp(const MyApp());
