@@ -126,6 +126,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: 'kkomi',
+      debugShowCheckedModeBanner: false,
       locale: const Locale('en', 'US'),
       localizationsDelegates: FLocalizations.localizationsDelegates,
       supportedLocales: FLocalizations.supportedLocales,
