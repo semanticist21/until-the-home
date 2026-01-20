@@ -34,7 +34,7 @@ import UIKit
           let fileName = (args["fileName"] as? String)?.isEmpty == false
             ? args["fileName"] as? String
             : url.lastPathComponent.isEmpty ? "shared_file" : url.lastPathComponent
-          let payload = try copyFileUrlToCache(url: url, fileName: fileName ?? "shared_file")
+          let payload = try self.copyFileUrlToCache(url: url, fileName: fileName ?? "shared_file")
           result(payload)
         } catch {
           result(FlutterError(code: "copy_failed", message: error.localizedDescription, details: nil))
