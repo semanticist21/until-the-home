@@ -15,7 +15,7 @@ class AppServerConversionLoading extends StatelessWidget {
           const CircularProgressIndicator(),
           const SizedBox(height: 12),
           Text(
-            '서버에서 문서를 변환 중이에요.\n파일 크기에 따라 시간이 걸릴 수 있어요.',
+            '서버에서 문서를 변환 중이에요.\n파일 크기에 따라 최대 30초 정도 걸릴 수 있어요.\n잠시만 기다려 주세요.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             textAlign: TextAlign.center,
           ),

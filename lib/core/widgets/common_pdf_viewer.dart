@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -77,7 +78,10 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
       if (widget.pdfBytes != null) {
         // PDF 바이트 데이터로 열기 (TXT/CSV 변환 후)
         appLogger.d('[COMMON_PDF_VIEWER] Loading from bytes');
-        document = await PdfDocument.openData(widget.pdfBytes!);
+        document = await PdfDocument.openData(widget.pdfBytes!).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException('PDF 로딩 시간 초과'),
+        );
       } else if (widget.assetPath != null) {
         // Asset 파일을 임시 파일로 복사 후 로드
         appLogger.d(
@@ -92,7 +96,10 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
         final tempFile = File('${tempDir.path}/$fileName');
         await tempFile.writeAsBytes(byteData.buffer.asUint8List());
         appLogger.d('[COMMON_PDF_VIEWER] Temp file created: ${tempFile.path}');
-        document = await PdfDocument.openFile(tempFile.path);
+        document = await PdfDocument.openFile(tempFile.path).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException('PDF 로딩 시간 초과'),
+        );
       } else if (widget.filePath != null) {
         // 파일 경로로 열기
         appLogger.d('[COMMON_PDF_VIEWER] Loading as FILE: ${widget.filePath}');
@@ -102,7 +109,10 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
         if (!exists) {
           throw Exception('File not found: ${widget.filePath}');
         }
-        document = await PdfDocument.openFile(widget.filePath!);
+        document = await PdfDocument.openFile(widget.filePath!).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException('PDF 로딩 시간 초과'),
+        );
       } else {
         throw Exception('No PDF source provided');
       }
@@ -269,7 +279,7 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const AppLoading();
+      return const AppLoading(message: 'PDF 문서를 불러오는 중이에요.\n잠시만 기다려 주세요.');
     }
 
     if (_error != null) {
@@ -340,6 +350,8 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
       // 투명한 하이라이트 색상으로 텍스트가 보이도록 설정
       matchTextColor: Colors.yellow.withValues(alpha: 0.3),
       activeMatchTextColor: Colors.orange.withValues(alpha: 0.5),
+      // 스크롤 민감도 향상 (값이 작을수록 더 민감)
+      interactionEndFrictionCoefficient: 0.0001,
       pagePaintCallbacks: [
         if (_textSearcher != null) _textSearcher!.pageTextMatchPaintCallback,
       ],

@@ -57,7 +57,7 @@ class NasToPdfConverter implements DocumentConverter {
     String fileName,
     String url,
     String fieldName, {
-    int maxRetries = 3,
+    int maxRetries = 2,
   }) async {
     int attempt = 0;
     Exception? lastException;
@@ -76,9 +76,7 @@ class NasToPdfConverter implements DocumentConverter {
           error: e,
         );
         if (attempt < maxRetries) {
-          final delaySeconds = (1 << (attempt - 1)); // 1s, 2s, 4s
-          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
-          await Future.delayed(Duration(seconds: delaySeconds));
+          appLogger.d('[NasToPdfConverter] Retrying immediately...');
         }
       } on TimeoutException catch (e) {
         lastException = Exception('Timeout: ${e.message}');
@@ -87,9 +85,7 @@ class NasToPdfConverter implements DocumentConverter {
           error: e,
         );
         if (attempt < maxRetries) {
-          final delaySeconds = (1 << (attempt - 1));
-          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
-          await Future.delayed(Duration(seconds: delaySeconds));
+          appLogger.d('[NasToPdfConverter] Retrying immediately...');
         }
       } on HttpException catch (e) {
         lastException = e;
@@ -98,9 +94,7 @@ class NasToPdfConverter implements DocumentConverter {
           error: e,
         );
         if (attempt < maxRetries) {
-          final delaySeconds = (1 << (attempt - 1));
-          appLogger.d('[NasToPdfConverter] Retrying after ${delaySeconds}s...');
-          await Future.delayed(Duration(seconds: delaySeconds));
+          appLogger.d('[NasToPdfConverter] Retrying immediately...');
         }
       } catch (e) {
         // 400, 500 등 서버 오류는 retry 하지 않음 (파일 문제일 가능성)
@@ -204,7 +198,7 @@ class NasToPdfConverter implements DocumentConverter {
 
       appLogger.d('[NasToPdfConverter] Sending request...');
       final response = await request.close().timeout(
-        const Duration(seconds: 65), // Increased for large files (e.g. PPTX)
+        const Duration(seconds: 30),
       );
       appLogger.d(
         '[NasToPdfConverter] Response status: ${response.statusCode}',
@@ -212,7 +206,7 @@ class NasToPdfConverter implements DocumentConverter {
 
       final responseBytes = await _readResponseBytes(
         response,
-      ).timeout(const Duration(seconds: 65));
+      ).timeout(const Duration(seconds: 30));
 
       final elapsedTime = DateTime.now().difference(startTime);
       appLogger.d(

@@ -1,7 +1,6 @@
 package com.kkomi;
 
 import kr.dogfoot.hwpxlib.reader.HWPXReader;
-import kr.dogfoot.hwpxlib.tool.textextractor.TextExtractMethod;
 import kr.dogfoot.hwpxlib.tool.textextractor.TextExtractor;
 import kr.dogfoot.hwpxlib.object.HWPXFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -29,7 +28,6 @@ public class HwpxToPdfConverter {
     private static final float MARGIN = 50;
     private static final float FONT_SIZE = 12;
     private static final float LINE_HEIGHT = FONT_SIZE * 1.5f;
-    private static final int MAX_CHARS_PER_LINE = 80;
 
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -139,7 +137,6 @@ public class HwpxToPdfConverter {
             PDPageContentStream contentStream = new PDPageContentStream(document, currentPage);
 
             float yPosition = currentPage.getMediaBox().getHeight() - MARGIN;
-            float pageWidth = currentPage.getMediaBox().getWidth() - (2 * MARGIN);
 
             contentStream.beginText();
             contentStream.setFont(koreanFont != null ? koreanFont : PDType1Font.HELVETICA, FONT_SIZE);

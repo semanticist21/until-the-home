@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 
-/// 공통 로딩 위젯 - CircularProgressIndicator만 표시
+/// 공통 로딩 위젯 - CircularProgressIndicator 표시 (선택적 메시지)
 class AppLoading extends StatelessWidget {
-  const AppLoading({super.key});
+  const AppLoading({super.key, this.message});
+
+  /// 선택적 로딩 메시지
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    if (message == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            message!,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }
 
