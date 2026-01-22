@@ -100,10 +100,11 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
-			<string>Alternate</string>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.hancom.hwp</string>
+				<string>com.hancom.office.hwp</string>
 			</array>
 		</dict>
 		<!-- HWPX -->
@@ -113,10 +114,11 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
-			<string>Alternate</string>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.hancom.hwpx</string>
+				<string>com.hancom.office.hwpx</string>
 			</array>
 		</dict>
 		<!-- Microsoft Word (DOCX) -->
@@ -224,8 +226,8 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Custom UTI Declarations for HWP/HWPX -->
-	<key>UTExportedTypeDeclarations</key>
+	<!-- Imported UTI Declarations (for UTIs defined by other apps like Hancom) -->
+	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
 			<key>UTTypeIdentifier</key>
@@ -235,7 +237,7 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
-				<string>public.composite-content</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeTagSpecification</key>
 			<dict>
@@ -246,6 +248,8 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/vnd.hancom.hwp</string>
+					<string>application/haansofthwp</string>
+					<string>application/x-hwp</string>
 				</array>
 			</dict>
 		</dict>
@@ -257,7 +261,7 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
-				<string>public.composite-content</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeTagSpecification</key>
 			<dict>
@@ -268,6 +272,44 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/vnd.hancom.hwpx</string>
+					<string>application/hwp+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- Alternative UTI used by Hancom Office app -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hancom.office.hwp</string>
+			<key>UTTypeDescription</key>
+			<string>Hancom Office HWP Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hancom.office.hwpx</string>
+			<key>UTTypeDescription</key>
+			<string>Hancom Office HWPX Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>hwpx</string>
 				</array>
 			</dict>
 		</dict>

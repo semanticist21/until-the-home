@@ -67,13 +67,14 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
     final pdf = pw.Document();
 
     // 다국어 지원 폰트 로드
-    // TODO: Polish(ą,ć,ę,ł,ń,ś,ź,ż), Turkish(ş,ğ,İ) 지원을 위해
-    // Noto Sans Regular (Latin Extended 포함) 추가 필요
     final fontDataList = await Future.wait([
+      rootBundle.load(
+        'assets/fonts/NotoSans-Regular.ttf',
+      ), // Latin Extended (Polish, Turkish 등)
       rootBundle.load('assets/fonts/NotoSansKR-Regular.ttf'), // Korean + Latin
       rootBundle.load(
         'assets/fonts/NotoSansCyrillic-Regular.ttf',
-      ), // Russian/Ukrainian + Latin Extended (일부)
+      ), // Russian/Ukrainian
       rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf'), // Japanese
       rootBundle.load(
         'assets/fonts/NotoSansSC-Regular.ttf',
@@ -101,7 +102,7 @@ class _TxtViewerScreenState extends State<TxtViewerScreen> {
     ]);
 
     final fonts = fontDataList.map((data) => pw.Font.ttf(data)).toList();
-    final primaryFont = fonts[0]; // Korean as primary
+    final primaryFont = fonts[1]; // Korean as primary
     final fallbackFonts = fonts.sublist(
       1,
     ); // Cyrillic 폰트를 앞쪽에 배치 (Latin Extended 일부 지원)

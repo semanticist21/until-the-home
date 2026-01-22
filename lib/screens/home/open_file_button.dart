@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../core/data/recent_documents_store.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/file-resolver.dart';
 import 'recent_documents_handlers.dart';
 
 class OpenFileButton extends StatefulWidget {
@@ -85,9 +86,22 @@ class _OpenFileButtonState extends State<OpenFileButton> {
         return;
       }
 
-      await RecentDocumentsStore.instance.addDocument(
+      // FileResolver로 파일 경로 처리 (임시 파일이면 영구 저장소로 복사)
+      final fileName = path.split('/').last;
+      final resolved = await FileResolver.resolve(
         path,
-        name: path.split('/').last,
+        suggestedName: fileName,
+      );
+
+      if (resolved.wasCopied) {
+        appLogger.i(
+          '[OPEN_FILE_BUTTON] File copied to permanent storage: ${resolved.path}',
+        );
+      }
+
+      await RecentDocumentsStore.instance.addDocument(
+        resolved.path,
+        name: resolved.displayName,
         type: fileType,
         openedAt: DateTime.now(),
       );
@@ -95,8 +109,8 @@ class _OpenFileButtonState extends State<OpenFileButton> {
 
       // Open viewer after adding to recent documents
       final doc = RecentDocument(
-        path: path,
-        name: path.split('/').last,
+        path: resolved.path,
+        name: resolved.displayName,
         type: fileType,
         openedAt: DateTime.now(),
       );

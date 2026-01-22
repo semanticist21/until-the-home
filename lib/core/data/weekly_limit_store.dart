@@ -96,12 +96,13 @@ class WeeklyLimitStore {
     return (currentUsage.value / weeklyLimit.value).clamp(0.0, 1.0);
   }
 
-  /// 다음 리셋까지 남은 일수
+  /// 다음 리셋까지 남은 일수 (0 이상 보장)
   int get daysUntilReset {
     if (_weekStartDate == null) return 0;
     final nextWeekStart = _weekStartDate!.add(const Duration(days: 7));
     final today = DateTime.now();
-    return nextWeekStart.difference(today).inDays;
+    final days = nextWeekStart.difference(today).inDays;
+    return days < 0 ? 0 : days;
   }
 
   /// 주간 한도 변경

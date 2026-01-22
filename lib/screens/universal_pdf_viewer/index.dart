@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/converters/document_converter.dart';
+import '../../core/data/pdf_cache_store.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_server_conversion_loading.dart';
 import '../../core/widgets/common_pdf_viewer.dart';
@@ -62,11 +64,37 @@ class _UniversalPdfViewerState extends State<UniversalPdfViewer> {
 
     try {
       if (widget.converter != null) {
-        // 변환이 필요한 경우
-        final pdfBytes = await widget.converter!.convertToPdf(
-          widget.filePath,
-          isAsset: widget.isAsset,
-        );
+        // 변환이 필요한 경우 - 먼저 캐시 확인
+        Uint8List? pdfBytes;
+
+        // 캐시 확인 (asset은 캐시 제외)
+        if (!widget.isAsset) {
+          pdfBytes = await PdfCacheStore.instance.getCachedPdf(widget.filePath);
+          if (pdfBytes != null) {
+            appLogger.i(
+              '[UniversalPdfViewer] Using cached PDF: ${widget.filePath}',
+            );
+          }
+        }
+
+        // 캐시가 없으면 변환 수행
+        if (pdfBytes == null) {
+          appLogger.i(
+            '[UniversalPdfViewer] Converting document: ${widget.filePath}',
+          );
+          pdfBytes = await widget.converter!.convertToPdf(
+            widget.filePath,
+            isAsset: widget.isAsset,
+          );
+
+          // 변환 성공 시 캐시 저장 (asset은 캐시 제외)
+          if (!widget.isAsset) {
+            await PdfCacheStore.instance.savePdfToCache(
+              widget.filePath,
+              pdfBytes,
+            );
+          }
+        }
 
         // 변환된 PDF를 임시 파일로 저장
         final tempDir = await getTemporaryDirectory();

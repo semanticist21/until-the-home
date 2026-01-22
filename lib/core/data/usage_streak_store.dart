@@ -84,6 +84,12 @@ class UsageStreakStore {
         appLogger.i(
           '[UsageStreakStore] Reset streak (gap=$daysDiff days) → streak=1',
         );
+      } else if (daysDiff < 0) {
+        // 시스템 시간이 과거로 변경된 경우 → 날짜만 업데이트, streak 유지
+        await _save(today, currentStreak.value);
+        appLogger.w(
+          '[UsageStreakStore] Time went backwards (diff=$daysDiff) → keeping streak=${currentStreak.value}',
+        );
       }
     } catch (e) {
       // 날짜 파싱 실패 시 안전하게 리셋

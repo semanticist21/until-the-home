@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Package ID**: com.kobbokkom.kkomi
 - **Dart SDK**: ^3.10.0
-- **상태**: 출시 전 개발 중 (2026.01.11 기준)
+- **상태**: 배포됨 (iOS TestFlight v1.0.2, Android Play Store v1.0.1)
 
 ## Development Commands
 
@@ -256,9 +256,22 @@ final nativeViewerFormats = Platform.isIOS
 
 ## 파일 확장자 연결 (File Association)
 
-**패키지**: `receive_sharing_intent: ^1.8.1`
+**패키지**:
+- `app_links: ^6.4.0` - iOS/Android "Open In" 액션 처리 (file:// URL)
+- `receive_sharing_intent: ^1.8.1` - iOS Share Extension 처리
 
 사용자가 다른 앱(파일 탐색기, 이메일 등)에서 문서를 열 때 Kkomi를 선택할 수 있는 기능.
+
+### ⚠️ 중요: "Open In" vs "Share" 구분 (2026.01.22)
+
+iOS에서 파일 열기에는 두 가지 메커니즘이 있음:
+
+| 액션 | 트리거 | 패키지 | URL 스킴 |
+|------|--------|--------|----------|
+| **Open In** | 파일 앱에서 "다음으로 열기" 선택 | `app_links` | `file://` |
+| **Share** | 공유 시트에서 앱 선택 | `receive_sharing_intent` | 앱별 상이 |
+
+**주의**: `receive_sharing_intent`만으로는 "Open In" 처리 불가 → 반드시 `app_links` 필요
 
 ### Android 구현
 
@@ -273,22 +286,46 @@ final nativeViewerFormats = Platform.isIOS
 
 ### Flutter 처리 로직 (`main.dart`)
 
+**Dual Handler Pattern**: "Open In"과 "Share" 모두 처리
+
 ```dart
-// 1. 앱 실행 중 공유 받기
-ReceiveSharingIntent.instance.getMediaStream().listen((files) {
-  _handleSharedFile(files.first);
-});
+// === app_links: "Open In" 처리 ===
+final AppLinks _appLinks = AppLinks();
 
-// 2. 앱 닫힌 상태에서 실행 시 공유 받기
-ReceiveSharingIntent.instance.getInitialMedia().then((files) {
-  _handleSharedFile(files.first);
-  ReceiveSharingIntent.instance.reset();
-});
+void _initAppLinks() {
+  // 1. 앱 시작 시 초기 링크 확인
+  _appLinks.getInitialLink().then((uri) {
+    if (uri != null) _handleAppLink(uri);
+  });
 
-// 3. 파일 처리
+  // 2. 앱 실행 중 "Open In" 처리
+  _appLinksSub = _appLinks.uriLinkStream.listen((uri) {
+    _handleAppLink(uri);
+  });
+}
+
+Future<void> _handleAppLink(Uri uri) async {
+  if (uri.scheme != 'file') return;  // file:// URL만 처리
+  final filePath = uri.toFilePath();
+  // FileResolver → RecentDocumentsStore → openRecentDocument()
+}
+
+// === receive_sharing_intent: Share Extension 처리 ===
+void _initSharingIntent() {
+  // 1. 앱 실행 중 공유 받기
+  ReceiveSharingIntent.instance.getMediaStream().listen((files) {
+    _handleSharedFile(files.first);
+  });
+
+  // 2. 앱 닫힌 상태에서 실행 시 공유 받기
+  ReceiveSharingIntent.instance.getInitialMedia().then((files) {
+    _handleSharedFile(files.first);
+    ReceiveSharingIntent.instance.reset();
+  });
+}
+
 void _handleSharedFile(SharedMediaFile file) {
-  // - RecentDocumentsStore에 추가
-  // - openRecentDocument()로 뷰어 열기
+  // FileResolver → RecentDocumentsStore → openRecentDocument()
 }
 ```
 
@@ -301,13 +338,28 @@ void _handleSharedFile(SharedMediaFile file) {
 - `LSHandlerRank`: `Alternate` (다른 앱이 있으면 선택지로 제공)
 - `CFBundleTypeRole`: `Viewer` (뷰어로만 동작)
 
-**UTExportedTypeDeclarations**: HWP/HWPX 커스텀 UTI 선언
+**UTImportedTypeDeclarations**: HWP/HWPX 커스텀 UTI 선언
 - `com.hancom.hwp`: HWP 파일 타입 정의 (확장자: .hwp, MIME: application/vnd.hancom.hwp)
 - `com.hancom.hwpx`: HWPX 파일 타입 정의 (확장자: .hwpx, MIME: application/vnd.hancom.hwpx)
+- `com.hancom.office.hwp`, `com.hancom.office.hwpx`: 한컴오피스 앱의 대체 UTI
+
+**Document Browser Support** (Info.plist):
+- `LSSupportsOpeningDocumentsInPlace`: true (in-place 문서 열기 지원)
+- `UISupportsDocumentBrowser`: true (문서 브라우저 지원)
+
+**iOS 네이티브 처리** (AppDelegate.swift):
+```swift
+import app_links
+
+if let url = AppLinks.shared.getLink(launchOptions: launchOptions) {
+  AppLinks.shared.handleLink(url: url)
+}
+```
 
 **동작 방식**:
 - 메일 첨부파일, 파일 앱, Safari 등에서 지원 파일 타입 선택 시 Kkomi가 앱 선택지에 표시
-- Flutter의 `receive_sharing_intent` 패키지가 파일 경로를 받아서 처리
+- **"Open In" 선택**: `app_links`가 file:// URL 처리
+- **"Share" 선택**: `receive_sharing_intent`가 Share Extension 처리
 
 ## Design System
 
@@ -384,7 +436,6 @@ SearchBottomBar(
   - 메서드: `checkWeeklyReset()`, `addUsage(amount)`, `setWeeklyLimit(newLimit)`
   - ValueNotifier: `currentUsage`, `weeklyLimit`
   - Getters: `remainingUsage`, `usageRatio`, `daysUntilReset`
-  - ⚠️ TODO: main.dart에서 `checkWeeklyReset()` 호출 필요, 문서 열람 시 `addUsage()` 호출 필요
 
 ## Key Dependencies
 
@@ -395,7 +446,8 @@ SearchBottomBar(
 - **csv**: CSV 파싱
 - **data_table_2**: 고급 DataTable (CSV 뷰어용)
 - **file_picker**: 파일 선택 대화상자
-- **receive_sharing_intent**: 파일 확장자 연결 (다른 앱에서 파일 열기)
+- **app_links**: "Open In" 파일 열기 처리 (file:// URL)
+- **receive_sharing_intent**: Share Extension 처리 (다른 앱에서 공유)
 - **open_filex**: 네이티브 외부 뷰어로 파일 열기 (iOS iWork 등)
 - **google_mobile_ads**: 광고 (iOS/Android만 지원)
 - **shared_preferences**: 로컬 저장소 (최근 문서, 설정, 사용량 등)
@@ -489,8 +541,7 @@ CommonPdfViewer(
 - **구조**: TXT 파일 읽기 → PDF 변환 → CommonPdfViewer 사용
 - **패키지**: pdf (생성)
 - **변환 설정**: A4 세로, 페이지당 약 50줄, 다국어 폰트 fallback 체인
-- **다국어 폰트**: Korean, Japanese, Chinese, Thai, Arabic, Hebrew, Hindi, Russian, Greek, Georgian, Armenian, Bengali, Tamil, Vietnamese, Math symbols
-- **⚠️ 폰트 한계**: Polish(ą,ć,ę,ł,ń,ś,ź,ż), Turkish(ş,ğ,İ) 미지원 (Noto Sans Latin Extended 추가 필요)
+- **다국어 폰트**: Latin Extended (Polish, Turkish 등), Korean, Japanese, Chinese, Thai, Arabic, Hebrew, Hindi, Russian, Greek, Georgian, Armenian, Bengali, Tamil, Vietnamese, Math symbols
 - **기능**: 검색, PDF 저장
 - **PDF 저장**: AppBar 우측에 PDF 아이콘 버튼
 

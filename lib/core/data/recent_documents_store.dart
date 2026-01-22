@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_logger.dart';
+import 'pdf_cache_store.dart';
 
 class RecentDocument {
   const RecentDocument({
@@ -102,9 +103,19 @@ class RecentDocumentsStore {
       ),
       ...documents.value.where((doc) => doc.path != path),
     ];
+
+    // 10개 초과 시 오래된 문서 제거 및 캐시 정리
     if (updated.length > _maxItems) {
+      final removedDocs = updated.sublist(_maxItems);
+      for (final doc in removedDocs) {
+        await PdfCacheStore.instance.removeCachedPdf(doc.path);
+        appLogger.d(
+          '[RECENT_DOCS] Removed cache for old document: ${doc.name}',
+        );
+      }
       updated.removeRange(_maxItems, updated.length);
     }
+
     documents.value = updated;
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(updated.map((doc) => doc.toJson()).toList());
@@ -117,6 +128,11 @@ class RecentDocumentsStore {
     if (filtered.length == documents.value.length) {
       return;
     }
+
+    // 캐시 정리
+    await PdfCacheStore.instance.removeCachedPdf(path);
+    appLogger.d('[RECENT_DOCS] Removed cache for document: $path');
+
     documents.value = filtered;
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(filtered.map((doc) => doc.toJson()).toList());
@@ -126,6 +142,8 @@ class RecentDocumentsStore {
   Future<void> pruneMissingFiles() async {
     await load();
     final before = documents.value.length;
+    final prunedDocs = <RecentDocument>[];
+
     final filtered = documents.value.where((doc) {
       try {
         if (_isAssetPath(doc.path) || _isContentUri(doc.path)) {
@@ -135,6 +153,7 @@ class RecentDocumentsStore {
         }
         final file = _fileFromPath(doc.path);
         if (file == null) {
+          prunedDocs.add(doc);
           return false; // Invalid file path
         }
         final exists = file.existsSync();
@@ -142,15 +161,24 @@ class RecentDocumentsStore {
           appLogger.w(
             '[RECENT_DOCS] Pruning missing file: ${doc.name} at ${doc.path}',
           );
+          prunedDocs.add(doc);
         }
         return exists;
       } catch (e) {
         appLogger.e('[RECENT_DOCS] Error checking file: ${doc.name}', error: e);
+        prunedDocs.add(doc);
         return false;
       }
     }).toList();
+
     final pruned = before - filtered.length;
     if (pruned > 0) {
+      // 캐시 정리 (일관성 유지)
+      for (final doc in prunedDocs) {
+        await PdfCacheStore.instance.removeCachedPdf(doc.path);
+        appLogger.d('[RECENT_DOCS] Removed cache for pruned document: ${doc.name}');
+      }
+
       appLogger.i('[RECENT_DOCS] Pruned $pruned missing files');
       documents.value = filtered;
       final prefs = await SharedPreferences.getInstance();

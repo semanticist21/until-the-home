@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -15,6 +16,7 @@ import 'core/data/weekly_limit_store.dart';
 import 'core/data/weekly_pages_store.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
+import 'core/utils/file-resolver.dart';
 import 'screens/home/index.dart';
 import 'screens/home/recent_documents_handlers.dart';
 
@@ -45,14 +47,95 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription? _intentSub;
+  StreamSubscription? _appLinksSub;
+  final AppLinks _appLinks = AppLinks();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
     _initSharingIntent();
+    _initAppLinks();
   }
 
+  /// Handle "Open In" action via app_links (file:// URLs from iOS/Android)
+  void _initAppLinks() {
+    // Handle initial link if app was launched via file open
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) {
+        _handleAppLink(uri);
+      }
+    });
+
+    // Handle subsequent links while app is running
+    _appLinksSub = _appLinks.uriLinkStream.listen((uri) {
+      _handleAppLink(uri);
+    });
+  }
+
+  Future<void> _handleAppLink(Uri uri) async {
+    // Only handle file:// URLs
+    if (uri.scheme != 'file') {
+      appLogger.d('[APP_LINKS] Ignoring non-file URL: $uri');
+      return;
+    }
+
+    try {
+      final filePath = uri.toFilePath();
+      final fileName = p.basename(filePath);
+      final extension = _extensionFromPath(filePath);
+
+      appLogger.i('[APP_LINKS] Opening file: $fileName, type: $extension');
+
+      // FileResolver로 파일 경로 처리
+      final resolved = await FileResolver.resolve(
+        filePath,
+        suggestedName: fileName,
+      );
+
+      if (resolved.wasCopied) {
+        appLogger.i(
+          '[APP_LINKS] File copied to permanent storage: ${resolved.path}',
+        );
+      }
+
+      // 최근 문서에 추가
+      await RecentDocumentsStore.instance.addDocument(
+        resolved.path,
+        name: resolved.displayName,
+        type: extension,
+        openedAt: DateTime.now(),
+      );
+
+      // RecentDocument 객체 생성
+      final doc = RecentDocument(
+        path: resolved.path,
+        type: extension,
+        name: resolved.displayName,
+        openedAt: DateTime.now(),
+      );
+
+      // 파일 열기
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        final context = _navigatorKey.currentContext;
+        if (context != null && mounted) {
+          // ignore: use_build_context_synchronously
+          final success = await openRecentDocument(context, doc);
+          if (!success) {
+            appLogger.w('[APP_LINKS] Unsupported file type: $extension');
+          }
+        }
+      });
+    } catch (e, st) {
+      appLogger.e(
+        '[APP_LINKS] Failed to handle file URL',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  /// Handle "Share" action via receive_sharing_intent
   void _initSharingIntent() {
     // 앱이 실행 중일 때 공유된 파일 처리
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
@@ -78,45 +161,66 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _handleSharedFile(SharedMediaFile file) async {
-    final filePath = file.path;
-    final meta = _deriveSharedFileMeta(file);
-    final fileName = meta.fileName;
-    final extension = meta.extension;
+    try {
+      final filePath = file.path;
+      final meta = _deriveSharedFileMeta(file);
+      final fileName = meta.fileName;
+      final extension = meta.extension;
 
-    appLogger.i('[SHARING] Received file: $fileName, type: $extension');
+      appLogger.i('[SHARING] Received file: $fileName, type: $extension');
 
-    // 최근 문서에 추가
-    await RecentDocumentsStore.instance.addDocument(
-      filePath,
-      name: fileName,
-      type: extension,
-      openedAt: DateTime.now(),
-    );
+      // FileResolver로 파일 경로 처리 (임시 파일이면 영구 저장소로 복사)
+      final resolved = await FileResolver.resolve(
+        filePath,
+        suggestedName: fileName,
+      );
 
-    // RecentDocument 객체 생성 (뷰어 열기용)
-    final doc = RecentDocument(
-      path: filePath,
-      type: extension,
-      name: fileName,
-      openedAt: DateTime.now(),
-    );
-
-    // 파일 열기 (약간의 딜레이로 UI가 준비될 때까지 대기)
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      final context = _navigatorKey.currentContext;
-      if (context != null && mounted) {
-        // ignore: use_build_context_synchronously
-        final success = await openRecentDocument(context, doc);
-        if (!success) {
-          appLogger.w('[SHARING] Unsupported file type: $extension');
-        }
+      if (resolved.wasCopied) {
+        appLogger.i(
+          '[SHARING] File copied to permanent storage: ${resolved.path}',
+        );
       }
-    });
+
+      // 최근 문서에 추가 (resolved.path 사용)
+      await RecentDocumentsStore.instance.addDocument(
+        resolved.path,
+        name: resolved.displayName,
+        type: extension,
+        openedAt: DateTime.now(),
+      );
+
+      // RecentDocument 객체 생성 (뷰어 열기용)
+      final doc = RecentDocument(
+        path: resolved.path,
+        type: extension,
+        name: resolved.displayName,
+        openedAt: DateTime.now(),
+      );
+
+      // 파일 열기 (약간의 딜레이로 UI가 준비될 때까지 대기)
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        final context = _navigatorKey.currentContext;
+        if (context != null && mounted) {
+          // ignore: use_build_context_synchronously
+          final success = await openRecentDocument(context, doc);
+          if (!success) {
+            appLogger.w('[SHARING] Unsupported file type: $extension');
+          }
+        }
+      });
+    } catch (e, st) {
+      appLogger.e(
+        '[SHARING] Failed to handle shared file',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   @override
   void dispose() {
     _intentSub?.cancel();
+    _appLinksSub?.cancel();
     super.dispose();
   }
 
