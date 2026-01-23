@@ -317,5 +317,8 @@
 	<!-- App Transport Security - Export Compliance -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Disable Flutter's default deep linking to let app_links handle URLs -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 </dict>
 </plist>

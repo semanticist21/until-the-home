@@ -341,8 +341,8 @@ class _CommonPdfViewerState extends State<CommonPdfViewer> {
       // 스크롤 설정: 스와이프 시 더 많이 스크롤되도록
       scrollPhysics: const BouncingScrollPhysics(),
       interactionEndFrictionCoefficient: 0.0001, // 매우 낮은 마찰 (기본값 ~0.02)
-      // 경계 여백: 문서 끝에서 추가 스크롤 공간 제공 (기본값 null → 제한적)
-      boundaryMargin: const EdgeInsets.symmetric(vertical: 500),
+      // 경계 여백: 문서 끝에서 추가 스크롤 공간 제공 (아래쪽만, 위쪽은 빈 공간 방지)
+      boundaryMargin: const EdgeInsets.only(bottom: 200),
       // 투명한 하이라이트 색상으로 텍스트가 보이도록 설정
       matchTextColor: Colors.yellow.withValues(alpha: 0.3),
       activeMatchTextColor: Colors.orange.withValues(alpha: 0.5),
